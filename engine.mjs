@@ -73,3 +73,11 @@ export function alternativeDrafts(scores,note='',history=[],profile={},current='
  }
  return out;
 }
+
+/** Advisory coverage check. Never infer facts from a missing phrase. */
+export function observationCoverage(note,scores,comment){
+ const o=analyzeObservation(note,scores);
+ const strengths=o.positives.filter(p=>!comment.includes(p));
+ const goals=o.goals.filter(p=>!comment.includes(p));
+ return {recognized:o.positives.length+o.goals.length,missingStrengths:strengths,missingGoals:goals,unknown:o.unknown.length};
+}

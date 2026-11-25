@@ -14,3 +14,5 @@ test('complex observations preserve contrast and explicit recent progress',async
 test('style structure learns sentence rhythm and punctuation',async()=>{const {trainStructure,structureFit}=await import('../engine.mjs');const s='待人誠懇，服務熱心；期許能持續發揮所長。';const m=trainStructure([s,s]);assert.equal(m.semicolon,1);assert.ok(structureFit(s,m)>structureFit('待人誠懇。',m));});
 
 test('alternative drafts are distinct and pass hard validation',async()=>{const {alternativeDrafts}=await import('../engine.mjs');const s=[5,4,5,4,5,3],note='經常遲到',current=draft(s,note),others=alternativeDrafts(s,note,[],{},current);assert.ok(others.length>=1);assert.equal(new Set(others).size,others.length);for(const c of others){assert.match(c,/守時/);assert.deepEqual(validate(c,[current]),[]);}});
+
+test('local evidence coverage reports omitted recognized observations without adding facts',async()=>{const {observationCoverage}=await import('../engine.mjs');const s=[4,4,4,4,4,3];const a=observationCoverage('熱心協助同學，但經常遲到',s,'待人有禮。');assert.ok(a.missingStrengths.includes('樂於協助同學'));assert.ok(a.missingGoals.includes('養成守時習慣'));assert.equal(a.unknown,0);});

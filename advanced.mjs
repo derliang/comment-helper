@@ -1,11 +1,11 @@
 import {dims,complete,length,similarity,validate} from './engine.mjs';
-export const VERSION='0.5.1-beta';
+export const VERSION='0.5.2-beta';
 export const identity=v=>String(v??'').normalize('NFKC').replace(/\s+/g,'');
 export const sameStudent=(a,b)=>Boolean(identity(a.studentId)&&identity(a.studentId)===identity(b.studentId));
 export function relatedHistory(r,history,projects=[]){return [...history,...projects.flatMap(p=>p.students.filter(x=>x.id!==r.id&&x.comment&&x.confirmed).map(x=>({...x,source:p.name})))].filter(h=>sameStudent(r,h)&&h.comment);}
 export function redact(text,people=[]){let s=String(text??'');const names=new Set();for(const p of people){const n=String(p.name??'').trim();if(n.length>=2){names.add(n);if(n.length>=3)names.add(n.slice(1));}const id=identity(p.studentId);if(id.length>=3)names.add(id);}for(const n of [...names].sort((a,b)=>b.length-a.length))s=s.split(n).join('學生');return s.replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g,'[電子郵件]').replace(/\d{5,}/g,'[數字]');}
 export function adaptiveProfile(base,feedback=[]){const edits=feedback.filter(x=>x.raw&&x.final&&x.raw!==x.final);const words=base.preferred||[];const preferred=[...words].sort((a,b)=>{const delta=w=>edits.reduce((n,e)=>n+(e.final.includes(w)?1:0)-(e.raw.includes(w)?1:0),0);return delta(b)-delta(a);});return {...base,preferred,edits:edits.length};}
-export function styleContext(r,profile,history,projects,share=false){const prior=relatedHistory(r,history,projects);const people=[r,...history,...projects.flatMap(p=>p.students)];const examples=share?[...new Set((profile.examples||[]).map(x=>redact(x,people)))].slice(-8):[];const avoid=share?[...new Set(prior.map(x=>redact(x.comment,people)))].slice(-8):[];const comparisonPool=share?[...new Set([...history,...projects.flatMap(p=>p.students.filter(x=>x.id!==r.id&&x.confirmed))].filter(x=>x.comment).map(x=>redact(x.comment,people)))]:[];return {observation:redact(r.note,people),style:{count:profile.count,preferred:(profile.preferred||[]).map(w=>redact(w,people)).filter(w=>!w.includes('學生')&&!w.includes('[')),edits:profile.edits||0,features:{...profile.features,structure:profile.structure||null},examples},avoid,comparisonPool};}
+export function styleContext(r,profile,history,projects,share=false){const prior=relatedHistory(r,history,projects);const people=[r,...history,...projects.flatMap(p=>p.students)];const examples=share?[...new Set(selectStyleExamples(r,history,projects,profile.examples||[]).map(x=>redact(x,people)))].slice(-8):[];const avoid=share?[...new Set(prior.map(x=>redact(x.comment,people)))].slice(-8):[];const comparisonPool=share?[...new Set([...history,...projects.flatMap(p=>p.students.filter(x=>x.id!==r.id&&x.confirmed))].filter(x=>x.comment).map(x=>redact(x.comment,people)))]:[];return {observation:redact(r.note,people),style:{count:profile.count,preferred:(profile.preferred||[]).map(w=>redact(w,people)).filter(w=>!w.includes('學生')&&!w.includes('[')),edits:profile.edits||0,features:{...profile.features,structure:profile.structure||null},examples},avoid,comparisonPool};}
 export function validEndpoint(url){try{const u=new URL(url);return !u.username&&!u.password&&(u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(u.hostname)));}catch{return false;}}
 export async function aiRequest(endpoint,token,payload,fetcher=fetch){if(!validEndpoint(endpoint))throw Error('請設定有效的 HTTPS 或本機端點');const response=await fetcher(endpoint,{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(payload),signal:AbortSignal.timeout(45000),redirect:'error'});if(!response.ok)throw Error('AI 服務 HTTP '+response.status);const result=await response.json();if(typeof result.comment!=='string')throw Error('AI 服務回傳格式不符');return {comment:result.comment.trim(),warnings:Array.isArray(result.warnings)?result.warnings.filter(x=>typeof x==='string').slice(0,8):[],semanticChecked:result.semanticChecked===true,qualityChecked:result.qualityChecked===true};}
 export async function generateAI({endpoint,token,rules,scores,context,history=[],fetcher}){if(!complete(scores))throw Error('請完成六個向度評分');if(!rules.trim())throw Error('原始評語指令尚未載入');const {comparisonPool=[],qualityCheck=false,...safeContext}=context;let issues=[],avoid=safeContext.avoid||[];for(let i=0;i<2;i++){const result=await aiRequest(endpoint,token,{mode:'generate',rules,override:'最新規則優先：六向度均為1–5分；日常生活表現、整潔習慣、禮節、班級服務、待人誠信、自律自重。無學習成效獨立向度；無證據勿推論學業。42–50字含標點；只描述已提供的觀察，不揭露身分。低分轉為具體成長期待，不虛構事蹟。',scores:Object.fromEntries(dims.map((d,j)=>[d,scores[j]])),...safeContext,avoid,issues},fetcher);issues=validate(result.comment,history);if(!issues.length&&(comparisonPool.length||avoid.length||qualityCheck)){const closest=comparisonPool.map(text=>({text,score:Math.max(similarity(text,result.comment),conceptOverlap(text,result.comment).shared>=2?conceptOverlap(text,result.comment).score*.85:0)})).sort((a,b)=>b.score-a.score).slice(0,6).map(x=>x.text);const samples=[...new Set([...avoid.slice(-8),...closest])].slice(0,14);try{const reviewed=await aiRequest(endpoint,token,{mode:'review',comment:result.comment,avoid:samples,...(qualityCheck?{quality:{scores:Object.fromEntries(dims.map((d,j)=>[d,scores[j]])),observation:safeContext.observation||''}}:{})},fetcher);if(reviewed.comment===result.comment){result.semanticChecked=Boolean(samples.length&&reviewed.semanticChecked);result.qualityChecked=Boolean(qualityCheck&&reviewed.qualityChecked);if(result.semanticChecked||result.qualityChecked)result.warnings=[...result.warnings,...reviewed.warnings];if(samples.length&&!result.semanticChecked)result.warnings.push('AI 端點未支援獨立語意核對');if(qualityCheck&&!result.qualityChecked)result.warnings.push('AI 端點未支援獨立品質核對，請人工確認');}else result.warnings.push('AI 核對回傳的文字不一致，請人工確認');}catch{result.warnings.push('AI 獨立核對未成功，請人工確認評語品質及重複性');}if(result.semanticChecked&&result.warnings.length)avoid=samples;}if(!issues.length&&!result.warnings.length)return result;if(i===1){if(length(result.comment)<42||length(result.comment)>50)throw Error('AI 未能符合字數限制，請重新生成');return result;}issues=[...issues,...result.warnings];}}
@@ -30,7 +30,7 @@ const concepts=[
 ];
 const conceptSet=s=>new Set(concepts.filter(([,re])=>re.test(s)).map(([k])=>k));
 export function conceptOverlap(a,b){const x=conceptSet(a),y=conceptSet(b);let n=0;for(const k of x)if(y.has(k))n++;return {shared:n,score:x.size+y.size?2*n/(x.size+y.size):0};}
-export function localHistoryWarnings(comment,prior=[]){if(!comment)return [];const matches=prior.filter(h=>{const m=conceptOverlap(comment,h.comment||'');return m.shared>=2&&m.score>=.8;});return matches.length?['與同學號過往評語有相近的觀察主題（'+matches.length+' 則），請核對是否仍符合本學期實況。']:[];}
+export function localHistoryWarnings(comment,prior=[]){if(!comment)return [];const matches=prior.filter(h=>{const m=conceptOverlap(comment,h.comment||'');return m.shared>=2&&m.score>=.8&&directionOverlap(comment,h.comment||'').changed===0;});return matches.length?['與同學號過往評語有相近的觀察主題（'+matches.length+' 則），請核對是否仍符合本學期實況。']:[];}
 export function approvedStyle(profile,versions=[]){const last=versions.at(-1);return last?{...profile,preferred:[...new Set([...last.preferred,...profile.preferred])],approvedVersion:last.version}:profile;}
 export function saveStyleVersion(versions,preferred){const words=[...new Set(String(preferred).split(/[、，,\n]+/).map(s=>s.trim()).filter(Boolean))];if(!words.length||words.length>40||words.some(w=>length(w)>16))throw Error('請輸入 1～40 個偏好詞語，每個不超過 16 字');return [...versions,{version:(versions.at(-1)?.version||0)+1,preferred:words,createdAt:new Date().toISOString()}];}
 
@@ -45,8 +45,8 @@ export function historyMatches(comment,records=[],limit=5){
  if(!comment)return [];
  return records.filter(h=>typeof h.comment==='string'&&h.comment.trim()).map(h=>{
   const textScore=similarity(comment,h.comment),m=conceptOverlap(comment,h.comment);
-  const topicScore=m.shared>=2?m.score:0;
-  return {...h,textScore,topicScore,shared:m.shared,score:Math.max(textScore,topicScore*.85)};
+  const directions=directionOverlap(comment,h.comment),topicScore=m.shared>=2?m.score:0;
+  return {...h,textScore,topicScore,shared:m.shared,directions,score:Math.max(textScore,topicScore*.85*(directions.changed?.75:1))};
  }).filter(h=>h.textScore>.55||h.topicScore>=.7).sort((a,b)=>b.score-a.score).slice(0,limit);
 }
 export function classReview(students,history=[],projects=[]){
@@ -58,4 +58,31 @@ export function classReview(students,history=[],projects=[]){
   const matches=historyMatches(r.comment,[...prior.map(h=>({...h,scope:'歷史'})),...peers.map(h=>({...h,scope:'同班'}))]);
   return {id:r.id,seat:r.seat,name:r.name,complete:complete(r.scores),confirmed:!!r.confirmed,stale:!!r.stale,hasComment:!!r.comment,hard,advisory:[...new Set([...(r.aiWarnings||[]),...localHistoryWarnings(r.comment,prior)])],matches};
  });
+}
+
+/** Select actual teacher examples near the current rating profile, excluding the target identity. */
+export function selectStyleExamples(r,history=[],projects=[],fallback=[],limit=8){
+ const candidates=[...history,...projects.flatMap(p=>p.students.filter(x=>x.confirmed&&(!x.aiOriginal||x.aiOriginal!==x.comment)))].filter(h=>h.comment&&h.id!==r.id&&!sameStudent(r,h));
+ const scored=candidates.map(h=>{
+  const pairs=Array.isArray(h.scores)&&Array.isArray(r.scores)?r.scores.map((v,i)=>[v,h.scores[i]]).filter(([a,b])=>Number.isInteger(a)&&Number.isInteger(b)&&a>=1&&a<=5&&b>=1&&b<=5):[];
+  const distance=pairs.length?pairs.reduce((n,[a,b])=>n+Math.abs(a-b),0)/pairs.length:4;
+  return {comment:h.comment,rank:pairs.length/6*(1-distance/4)};
+ }).sort((a,b)=>b.rank-a.rank);
+ const own=new Set(relatedHistory(r,history,projects).map(h=>h.comment));return [...new Set([...scored.map(x=>x.comment),...fallback])].filter(c=>!own.has(c)).slice(0,limit);
+}
+/** Distinguish observed strengths from future expectations; uncertain wording stays neutral. */
+export function conceptDirections(s){
+ const result=new Map(),clauses=String(s||'').split(/[，,。；;！？]/).filter(Boolean);
+ let expectation=false;
+ for(const clause of clauses){
+  if(/若能|若可|期許|期待|希望|建議|宜|仍需|有待|可再/.test(clause))expectation=true;
+  const direction=expectation?'goal':/能|具備|善於|熱心|樂於|主動|有禮|誠懇|真誠|穩定|良好|優良|進步|準時|守時|認真|盡責/.test(clause)?'strength':'neutral';
+  for(const k of conceptSet(clause)){if(!result.has(k))result.set(k,new Set());result.get(k).add(direction);}
+ }
+ return result;
+}
+export function directionOverlap(a,b){
+ const x=conceptDirections(a),y=conceptDirections(b);let shared=0,aligned=0,changed=0;
+ for(const [k,ds] of x){const other=y.get(k);if(!other)continue;shared++;const strong=ds.has('strength')&&other.has('strength'),goal=ds.has('goal')&&other.has('goal');if(strong||goal)aligned++;else if((ds.has('strength')&&other.has('goal'))||(ds.has('goal')&&other.has('strength')))changed++;}
+ return {shared,aligned,changed};
 }
