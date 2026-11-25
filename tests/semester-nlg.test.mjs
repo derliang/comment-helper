@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature,semesterLanguageInventory} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature,semesterLanguageInventory,semesterLexicalInventory} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
 const s=[4,4,4,4,4,3];
 test('semester evaluation abstracts incidents into enduring developmental concepts',()=>{for(const [note,concept,re] of [['待人有禮，但擅自離開教室','生活自律與規範',/自律|自我管理/],['熱心協助同學，但經常與同學爭執','人我調和',/人我|人際|相處/],['熱心協助同學，但經常遲到','時間管理',/守時/],['熱心協助同學，但忘記打掃','整潔與責任',/整潔|環境維護/]]){const x=deepGenerate(s,note);assert.match(x.comment,re);assert.ok(x.chosenGoals.some(e=>e.concept===concept));assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.issues,[]);assert.doesNotMatch(x.comment,/先向師長說明|先聽對方說完|擅自離開|將有助於|提早做好出門/);assert.equal(x.quality.level,'學期總結性評量');}});
 test('explicit isolated incidents do not establish semester-wide defects or strengths',()=>{const p=semesterPlan([4,4,4,4,4,4],'待人有禮，但今天擅自離開教室，某次協助班級活動');assert.equal(p.deferred.length,2);assert.equal(p.focus,'延續優勢');assert.equal(p.observedGoals.length,0);assert.ok(!p.observed.some(e=>e.id==='classEvents'));const x=deepGenerate([4,4,4,4,4,4],'今天擅自離開教室');assert.equal(x.plan.focus,'延續優勢');assert.deepEqual(x.issues,[]);});
@@ -124,4 +124,12 @@ test('expanded language inventory doubles each connective resource family withou
  const n=semesterLanguageInventory();assert.ok(n.wish>=14);assert.ok(n.conditional>=4);assert.ok(n.contrast>=8);assert.ok(n.addition>=6);assert.ok(n.goalJoiners>=2);
  for(const l of ['如果能','假如能','倘若能']){const a=semesterSemanticSignature('待人有禮；'+l+'培養守時習慣，生活將更有條理。');assert.equal(a.lead,l.slice(0,-1));}
  const b=semesterSemanticSignature('待人有禮，且能協助班務；只是守時習慣仍不穩定，盼今後能培養守時習慣。');assert.equal(b.transition,'只是');assert.equal(b.addition,'且能');assert.equal(b.lead,'盼今後');
+});
+
+
+test('development lexicon doubles each concept and grade resource family',()=>{
+ const inv=semesterLexicalInventory();assert.equal(inv.observation.groups,22);assert.equal(inv.grades.groups,6);
+ for(const row of [...inv.observationGroups,...inv.gradeGroups])assert.ok(row.after>=2*row.before,JSON.stringify(row));
+ const a=semesterPlan([4,4,4,4,4,3],'經常遲到');assert.ok(a.observedGoals.some(g=>g.variants.includes('加強時間規劃與守時觀念')));
+ const b=semesterPlan([2,4,4,4,4,4],'');assert.ok(b.goals.some(g=>g.variants.includes('重視生活作息與日常條理')));
 });

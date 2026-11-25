@@ -352,6 +352,230 @@ const naturalGoals=new Map([
  ['學習習慣',['用心安排自己的學習，培養規律的複習習慣']],
  ['表達與學習',['在學習與團體生活中更勇於表達自己的想法']]
 ]);
+// Generic language resources authored independently of any student record.
+const expandedTermLexicon=new Map([
+ [
+  "生活準備",
+  "妥善安排日常所需",
+  "培養有條理的準備習慣",
+  "增進生活準備的周全性",
+  "在日常事務上做好規劃"
+ ],
+ [
+  "生活自律與規範",
+  "養成自律守規的生活態度",
+  "落實自我管理與生活常規",
+  "增進遵守團體規範的自覺",
+  "在生活規範上提高自我要求",
+  "培養對共同規範的尊重",
+  "兼顧個人行為與團體秩序",
+  "建立穩定自律的生活習慣",
+  "以負責的態度遵守生活規範",
+  "加強日常自律與守規意識"
+ ],
+ [
+  "時間管理",
+  "養成穩定的守時習慣",
+  "加強時間規劃與守時觀念",
+  "建立準時有序的生活習慣",
+  "妥善掌握時間並重視守時",
+  "培養良好的時間觀念與自律",
+  "重視日常作息的安排與守時",
+  "在守時與作息管理上多加努力",
+  "提升時間運用的自覺"
+ ],
+ [
+  "團體秩序",
+  "尊重團體活動的共同秩序",
+  "加強維護秩序的自覺",
+  "培養守序與自我約束的習慣",
+  "以自律態度參與團體生活"
+ ],
+ [
+  "團體配合",
+  "增進團體活動中的配合與效率",
+  "養成準時配合團體活動的習慣",
+  "重視集體活動的時間與步調"
+ ],
+ [
+  "公共責任",
+  "主動愛護公物與公共環境",
+  "培養維護公共空間的責任感",
+  "珍惜共同使用的環境與資源"
+ ],
+ [
+  "整潔與責任",
+  "培養自發維護整潔的習慣",
+  "落實分內的環境維護工作",
+  "重視整潔工作與應盡的責任",
+  "養成主動維護周遭整潔的態度",
+  "在環境整理上多加自我要求",
+  "建立確實負責的清潔習慣",
+  "加強環境整潔的自覺與行動",
+  "以負責的態度做好整潔工作"
+ ],
+ [
+  "人際修養",
+  "培養合宜有禮的待人態度",
+  "重視日常言談與待人分寸",
+  "在應對進退上多加用心",
+  "增進待人禮節與尊重",
+  "養成體貼有禮的相處習慣",
+  "以適切的言語表達尊重"
+ ],
+ [
+  "人我調和",
+  "增進與同儕互動時的理解與尊重",
+  "培養尊重不同意見的態度",
+  "以包容的態度面對人際分歧",
+  "在與人互動中多加體諒",
+  "學習理性溝通與相互尊重",
+  "重視彼此感受並妥善處理分歧",
+  "培養平和而有分寸的溝通態度",
+  "增進同儕相處中的包容與理解",
+  "以尊重的態度看待彼此差異",
+  "在人際關係中養成體諒的習慣",
+  "學習接納不同立場與意見"
+ ],
+ [
+  "服務與責任",
+  "主動分擔團體事務並盡責完成",
+  "培養對班級工作的責任感",
+  "確實承擔自己應盡的分工",
+  "以主動負責的態度參與班務",
+  "在團體工作中落實分內責任",
+  "增進參與班務的主動與責任心"
+ ],
+ [
+  "誠信與承擔",
+  "養成誠實面對自身言行的態度",
+  "重視言行一致與責任承擔",
+  "以誠信態度面對自己的責任",
+  "增進對言行負責的自覺",
+  "培養誠實自省並承擔責任的習慣"
+ ],
+ [
+  "承諾與信任",
+  "重視約定並確實履行承諾",
+  "培養對承諾負責的態度",
+  "以守信態度維護彼此信任",
+  "養成言行相符與守約的習慣",
+  "在履行承諾上提高自我要求"
+ ],
+ [
+  "評量誠信",
+  "恪守學習與評量的誠信原則",
+  "以誠實負責的態度面對評量",
+  "培養尊重評量規範的自覺"
+ ],
+ [
+  "主動與責任",
+  "養成主動完成分內事務的習慣",
+  "以負責的態度安排日常工作",
+  "增進處事的自發性與責任心",
+  "在日常事務上主動承擔責任"
+ ],
+ [
+  "處事與規劃",
+  "培養有條理的處事習慣",
+  "妥善規劃生活中的各項事務",
+  "養成自我檢視與安排的習慣",
+  "重視事務的先後順序與規劃"
+ ],
+ [
+  "學習專注",
+  "養成穩定專注的學習態度",
+  "增進學習時的專注與自我管理",
+  "培養持續投入學習的習慣",
+  "在學習專注上多加自我要求",
+  "重視學習過程中的專心與投入"
+ ],
+ [
+  "學習責任",
+  "確實履行應盡的學習責任",
+  "建立按時完成作業的習慣",
+  "培養對學習事務負責的態度",
+  "妥善安排並完成學習工作"
+ ],
+ [
+  "學習習慣",
+  "建立規律而有計畫的學習習慣",
+  "妥善規劃複習與學習進度",
+  "培養自主管理學習的能力",
+  "在學習安排上多加自我要求",
+  "養成有條理的複習與學習習慣"
+ ],
+ [
+  "表達與學習",
+  "更主動參與學習與意見交流",
+  "培養表達想法與請益的勇氣",
+  "增進主動提問及參與討論的意願",
+  "在學習互動中勇於表達意見",
+  "練習主動分享自己的思考"
+ ],
+ [
+  "合作與調和",
+  "培養互相協調與合作的態度",
+  "增進團體合作中的理解與配合",
+  "重視共同目標與彼此的想法"
+ ],
+ [
+  "持續學習",
+  "培養持續探索與努力的學習態度",
+  "以耐心與毅力面對學習挑戰",
+  "養成面對學習困難時持續嘗試的習慣"
+ ],
+ [
+  "反思與成長",
+  "培養自我檢視與調整的態度",
+  "以開放的心態接納合宜建議",
+  "增進反思自身做法的能力"
+ ]
+].map(([label,...variants])=>[label,variants]));
+const expandedGradeLexicon=[
+ [
+  "重視生活作息與日常條理",
+  "培養規律有序的生活態度",
+  "增進生活安排的自主性",
+  "在生活常規上多加自我要求",
+  "養成妥善規劃日常事務的習慣"
+ ],
+ [
+  "落實日常整理與整潔工作",
+  "培養維護周遭環境的責任心",
+  "在整潔習慣上更主動負責",
+  "重視環境維護工作的確實性",
+  "建立自發整理生活空間的習慣"
+ ],
+ [
+  "培養合宜的言談與應對習慣",
+  "增進待人接物的禮節與分寸",
+  "以尊重的態度與人互動",
+  "重視日常應對中的體貼與禮貌",
+  "在待人態度上多加自我要求"
+ ],
+ [
+  "培養主動參與班務的態度",
+  "確實履行班級分工的責任",
+  "增進團體事務的參與與投入",
+  "在班級工作上多加用心",
+  "養成對分內工作負責的習慣"
+ ],
+ [
+  "以誠信態度面對自身言行",
+  "重視約定與應盡的責任",
+  "培養言行相符的自我要求",
+  "在誠信與責任上持續精進",
+  "養成誠實守信的生活態度"
+ ],
+ [
+  "重視自律與共同生活規範",
+  "培養自我約束與管理的習慣",
+  "在日常生活上增進自律意識",
+  "以負責的態度遵守團體規範",
+  "逐步落實自我管理與生活常規"
+ ]
+];
 const naturalGrade=[
  ['養成有條理的生活習慣','對日常生活多一分用心與自我要求'],
  ['養成主動整理環境的習慣','在整潔工作上多一分主動與用心'],
@@ -417,10 +641,10 @@ function warningSpec(e){
 function termGoal(e,focus){
  if(e.source==='等第'){
   const vs=focus==='延續優勢'?[e.phrase,...(e.dim===3?['延續對班級事務的用心','持續在團體中發揮服務精神']:e.dim===5?['持續展現自律與自我要求','延續成熟的生活態度']:['持續保持這份良好的表現','延續這份用心與自我要求'])]:unique([e.phrase,termGrade[e.dim][Math.max(0,Math.min(2,e.grade-1))],...termGrade[e.dim].slice(1),...(e.grade===1?['從基本生活常規著手，逐步培養有條理的生活習慣','逐步建立整理與環境維護的基本習慣','逐步培養尊重他人與合宜應對的基本態度','逐步建立承擔分內工作與參與團體事務的習慣','培養言行一致與履行承諾的基本責任感','逐步建立生活自律與遵守團體規範的習慣'].slice(e.dim,e.dim+1):[])]);
-  return {...e,label:dims[e.dim],variants:unique([...vs,...(focus==='延續優勢'?[]:naturalGrade[e.dim])])};
+  return {...e,label:dims[e.dim],variants:unique([...vs,...(focus==='延續優勢'?[]:[...naturalGrade[e.dim],...expandedGradeLexicon[e.dim]])])};
  }
  const m=termById.get(e.id);
- const goal={...e,label:m?.label||dims[e.dim]||'個別發展',variants:unique([...(naturalGoals.get(m?.label)||[]),...(m?.variants||[e.phrase])])};
+ const goal={...e,label:m?.label||dims[e.dim]||'個別發展',variants:unique([...(naturalGoals.get(m?.label)||[]),...(m?.variants||[e.phrase]),...(expandedTermLexicon.get(m?.label)||[])])};
  const warning=warningSpec(e);
  return {...goal,variants:unique([...(warning?.directions||[]),...goal.variants]),warningVariants:warning?.warnings||[],warningDirections:warning?.directions||[],bridgeVariants:bridgesFor(goal).flatMap(b=>b.variants)};
 }
@@ -467,6 +691,13 @@ const termContrastLeads=['但','然而，','不過，','惟','只是','另一方
 const termAdditions=['亦能','並能','同時也能','且能','又能','並且能','同時能'];
 const termGoalJoiners=['，並','，並且','，同時','，亦能'];
 const termConditionPattern=/(?:若能|如能|倘能|如果能|假如能|倘若能)/;
+// Count unique authored resources by conceptual group, not possible combinations.
+export function semesterLexicalInventory(){
+ const observation=termGroups.map(([,label,...base])=>{const original=unique([...base,...(naturalGoals.get(label)||[])]);const expanded=unique([...original,...(expandedTermLexicon.get(label)||[])]);return {label,before:original.length,after:expanded.length};});
+ const grades=termGrade.map((base,i)=>{const original=unique([...base,...naturalGrade[i]]);return {dimension:dims[i],before:original.length,after:unique([...original,...expandedGradeLexicon[i]]).length};});
+ const summary=rows=>({before:rows.reduce((n,r)=>n+r.before,0),after:rows.reduce((n,r)=>n+r.after,0),groups:rows.length});
+ return {observation:summary(observation),grades:summary(grades),observationGroups:observation,gradeGroups:grades};
+}
 export const semesterLanguageInventory=()=>({wish:termSurfaceLeads.length,conditional:termConditionalLeads.length,contrast:termContrastLeads.length,addition:termAdditions.length,goalJoiners:termGoalJoiners.length});
 function termDistinct(a,b){if(a.source==='等第'&&b.source==='等第'&&[0,5].includes(a.dim)&&[0,5].includes(b.dim))return false;if(a.source==='觀察'&&['help','carePeers'].includes(a.id)&&b.source==='等第'&&b.dim===3)return similarity(a.phrase,b.phrase)<.45;return distinct(a,b);}
 function termPool(p,profile){
