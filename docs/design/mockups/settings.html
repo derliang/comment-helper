@@ -1,0 +1,69 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模擬頁：設定與備份</title><style>
+:root{--green:#17634e;--green-dark:#104d3c;--side:#173c32;--line:#dce5e3;--ink:#213b38;--muted:#63766f;--canvas:#f3f6f5;--card:#fff;
+--done-fg:#236d45;--done-bg:#e1f3e7;--doing-fg:#926112;--doing-bg:#fff1d7;--new-fg:#64756e;--new-bg:#eef1ef;--warn-bg:#fff4df;--warn-fg:#855411;
+--danger:#b32631;--danger-bg:#fff4f4;--danger-line:#e9b8bc;--shadow:0 3px 15px #183d3010;
+--g5:#16a34a;--g4:#84cc16;--g3:#eab308;--g2:#f97316;--g1:#dc2626;
+--g5p:#dcfce7;--g4p:#ecfccb;--g3p:#fef9c3;--g2p:#ffedd5;--g1p:#fee2e2}
+*{box-sizing:border-box}
+body{margin:0;display:flex;min-height:100vh;font:14px system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif;color:var(--ink);background:var(--canvas)}
+aside{width:238px;background:var(--side);color:#fff;padding:24px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;flex-shrink:0}
+.brand{display:flex;gap:11px;align-items:center;padding:10px 3px;font-weight:800}
+.brand-mark{width:43px;height:43px;border-radius:13px;background:#d9eee4;color:#185840;display:grid;place-items:center;font-size:20px}
+.brand small{display:block;font-size:12px;color:#b1d2c5;font-weight:500;margin-top:3px}
+nav{display:grid;gap:7px;margin:25px 0}.cap{color:#a7c8bb;font-size:11px;letter-spacing:1px;margin:8px 10px}
+nav button{min-height:44px;text-align:left;background:transparent;color:#d5e7dc;border:1px solid transparent;border-radius:8px;padding:0 12px;font:650 14px inherit;font-family:inherit}
+nav button.sel{background:#40745d;color:#fff}
+main{flex:1;min-width:0;padding:28px clamp(16px,3vw,40px);max-width:1440px}
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:19px;margin-bottom:20px}
+h1{font-size:clamp(22px,3vw,30px);margin:0}h2{font-size:21px;margin:0 0 4px}
+.version{font-size:12px;background:#e2ede5;color:#245a46;padding:5px 9px;border-radius:20px;vertical-align:middle}
+.saved{background:#e6f2e9;color:#398060;padding:8px 12px;border-radius:9px;font-weight:650;font-size:12px}
+.panel{background:var(--card);border:1px solid #d9e5e1;border-radius:16px;padding:16px 18px;margin-bottom:12px}
+.kicker{font-size:10px;letter-spacing:1.5px;font-weight:750;color:#5c8279}
+.muted{color:var(--muted);font-size:13px}
+button,select,input,textarea{font:inherit;border:1px solid var(--line);border-radius:8px;min-height:36px;padding:8px 12px;background:#fff;color:inherit}
+button{cursor:pointer;font-weight:600}
+button.primary{background:var(--green);color:#fff;border-color:var(--green)}
+button.word{background:#185abd;color:#fff;border-color:#185abd}button.excel{background:#107c41;color:#fff;border-color:#107c41}
+button.danger{color:var(--danger);background:var(--danger-bg);border-color:var(--danger-line)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 15px;box-shadow:var(--shadow)}.stat b{display:block;font-size:28px;margin-top:5px}
+.bar{height:7px;background:#dce7df;border-radius:8px;overflow:hidden;margin:10px 0}.bar i{display:block;height:100%;background:var(--green)}
+.student{background:#fff;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;box-shadow:0 2px 6px #173d3007;overflow:hidden}
+.student.open{border-color:#84b69d;box-shadow:0 4px 18px #1b55331a}
+.sh{display:flex;gap:12px;align-items:center;padding:12px 15px}.sh .name{font-size:15px;font-weight:700;flex:1}
+.st{padding:4px 8px;border-radius:7px;font-size:11px}.done{color:var(--done-fg);background:var(--done-bg)}.doing{color:var(--doing-fg);background:var(--doing-bg)}.new{color:var(--new-fg);background:var(--new-bg)}
+.stars{color:#d4dad6;font-size:18px}.stars b{color:#eab308;font-weight:400}
+.summary{padding:0 15px 9px;color:var(--muted);font-size:13px;margin:0}
+.detail{display:grid;grid-template-columns:1fr;gap:15px;padding:16px;background:#fbfdfb;border-top:1px solid var(--line)}
+@media(min-width:1150px){.detail{grid-template-columns:1.12fr 1fr}}
+.rating{display:grid;grid-template-columns:minmax(112px,132px) repeat(5,minmax(0,1fr));gap:5px;align-items:center;max-width:565px;margin-bottom:6px}
+.rating .lab{font-size:15px;font-weight:740}
+.rating button{height:34px;min-height:34px;padding:3px 2px;font-size:14px;font-weight:700;border:2px solid transparent;border-radius:7px}
+.rating button.on{border-color:#344b3b;box-shadow:0 0 0 1px #fff inset}
+.b5{background:var(--g5p);color:#14532d}.b4{background:var(--g4p);color:#3f6212}.b3{background:var(--g3p);color:#713f12}.b2{background:var(--g2p);color:#9a3412}.b1{background:var(--g1p);color:#991b1b}
+.preview{padding:12px;background:#eaf3ed;border:1px solid #d1e4d7;border-radius:12px}
+.preview textarea{width:100%;min-height:86px;line-height:1.85;font-size:15px;border-color:#bcd5ca}
+.issues{padding:7px 9px;margin:6px 0;border-radius:7px;background:var(--warn-bg);color:var(--warn-fg);font-size:12px;line-height:1.55}
+dialog{border:1px solid var(--line);border-radius:16px;width:min(560px,95vw);padding:22px;box-shadow:0 18px 60px #0b362c38;color:var(--ink);position:static;margin:0 0 24px}
+dialog[open]{display:block}
+.dlgwrap{display:flex;gap:24px;flex-wrap:wrap;background:#16332688;padding:24px;border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}th{background:#edf4ee;color:#35564a}
+label{display:block;font-size:13px;font-weight:650;margin:8px 0}
+:focus-visible{outline:2px solid #245a46;outline-offset:2px}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed #b7c9bf;border-radius:12px;background:#fff}
+@media(max-width:760px){body{display:block}aside{width:100%;height:auto;position:static;padding:13px 12px}nav{grid-auto-flow:column;margin:10px 0 0}.cap{display:none}
+main{padding:12px}.stats{grid-template-columns:repeat(2,1fr)}.rating{grid-template-columns:minmax(78px,92px) repeat(5,minmax(0,1fr));gap:3px}.rating .lab{font-size:13px}}
+</style></head><body>
+<aside><div class="brand"><div class="brand-mark">評</div><div>智慧評語小幫手<small>COMMENT HELPER</small></div></div>
+<nav><div class="cap">功能</div><button class="">班級工作台</button><button class="">歷史評語</button><button class="sel">設定與備份</button></nav></aside>
+<main><header><div><div class="kicker">模擬頁（假資料）</div><h1>智慧評語小幫手 <span class="version">v0.0.0</span></h1></div><div class="saved">本機儲存</div></header>
+
+<section class="panel"><h2>設定與備份</h2>
+<h3>學生名單管理</h3><div class="toolbar"><select><option>範例班</option></select><button class="primary">＋ 新增學生</button><input placeholder="搜尋姓名、座號、學號"></div>
+<div style="overflow-x:auto"><table><tr><th>座號</th><th>姓名</th><th>學號</th><th>操作</th></tr><tr><td>01</td><td>範例甲</td><td>—</td><td><button>編輯</button> <button class="danger">移除</button></td></tr></table></div>
+<h3>備份</h3><div class="toolbar"><button>下載完整 JSON 備份</button><input type="file"></div>
+<h3>本機深層自然語言引擎</h3><label>搜尋內建語意規則<input style="width:100%" placeholder="守時、班級服務、溝通"></label>
+<div class="issues">提醒：自由文字可能含個資，提交前請審閱。</div></section></main></body></html>
