@@ -63,7 +63,7 @@ function allowedNegative(clause,re){
  const m=re?.exec(clause);if(!m)return false;
  return !/(?:沒有|未曾|從未|不曾|不再|沒有再|很少|並未).{0,5}$/.test(clause.slice(0,m.index));
 }
-export function analyzeObservation(note='',scores=[]){
+export function analyzeObservation(note='',scores=[],custom=[]){
  const clauses=String(note).normalize('NFKC').split(/[，,。；;、\n！!]+|但是|但|然而|不過/).map(x=>x.trim()).filter(Boolean);
  const positives=[],goals=[],unknown=[],conflicts=[];
  for(const clause of clauses){
@@ -75,7 +75,7 @@ export function analyzeObservation(note='',scores=[]){
   if(neg&&r.goal){goals.push(r.goal);found=true;if(r.dim!==null&&scores[r.dim]===5)conflicts.push('補充觀察與'+dims[r.dim]+'滿分並存，請核對。');}
   else if(pos&&r.good){positives.push(r.good);found=true;if(r.dim!==null&&scores[r.dim]<=2&&scores[r.dim]>=1)conflicts.push('補充觀察與'+dims[r.dim]+'低分並存，請核對。');}
   else if(r.neutral?.test(clause))found=true;
- }if(!found)unknown.push(clause);}
+ }for(const r of custom.filter(validSemanticRule)){if(r.enabled===false)continue;for(const k of r.keywords){const at=clause.indexOf(k);if(at<0)continue;const before=clause.slice(0,at);if(/(?:沒有|不曾|不再|未曾|希望|期待|期許|建議|若能|不|未).{0,6}$/.test(before))continue;(r.kind==='positive'?positives:goals).push(r.phrase);found=true;break;}}if(!found)unknown.push(clause);}
  return {positives:[...new Set(positives)],goals:[...new Set(goals)],unknown,conflicts:[...new Set(conflicts)]};
 }
 
@@ -105,7 +105,7 @@ const maintenance=['期待在團體生活中持續展現良好表現','期盼延
 export function draft(scores,note='',history=[],profile={preferred:[]}){
  if(!complete(scores))return '';
  const rank=scores.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v||a.i-b.i),low=Math.min(...scores),allStrong=low>=4;
- const observation=analyzeObservation(note,scores),specific=observation.positives,targets=observation.goals;
+ const observation=analyzeObservation(note,scores,profile.semanticRules||[]),specific=observation.positives,targets=observation.goals;
  const ranked=rank.filter(x=>x.v>=4).map(x=>positive[x.i][x.v===5?0:1]);
  const base=low===3?'日常表現大致符合基本常規':low===2?'日常生活常規仍有穩定空間':'日常生活仍需逐步建立基本常規';
  const neutral=[base,'日常生活各方面仍有成長空間','可從日常生活累積穩定表現'];
@@ -160,9 +160,12 @@ export function alternativeDrafts(scores,note='',history=[],profile={},current='
 }
 
 /** Advisory coverage check. Never infer facts from a missing phrase. */
-export function observationCoverage(note,scores,comment){
- const o=analyzeObservation(note,scores);
+export function observationCoverage(note,scores,comment,custom=[]){
+ const o=analyzeObservation(note,scores,custom);
  const strengths=o.positives.filter(p=>!comment.includes(p));
  const goals=o.goals.filter(p=>!comment.includes(p));
  return {recognized:o.positives.length+o.goals.length,missingStrengths:strengths,missingGoals:goals,unknown:o.unknown.length};
 }
+
+export const builtinSemanticTopics=observations.map(r=>r.good||r.goal).filter(Boolean);
+export function validSemanticRule(r){return !!r&&typeof r.topic==='string'&&r.topic.trim().length>0&&r.topic.length<=50&&Array.isArray(r.keywords)&&r.keywords.length>0&&r.keywords.length<=20&&r.keywords.every(k=>typeof k==='string'&&k.trim()&&k.length<=30)&&['positive','goal'].includes(r.kind)&&typeof r.phrase==='string'&&length(r.phrase)>=3&&length(r.phrase)<=16&&!/[\r\n，。；！？]/.test(r.phrase)&&!validate(r.phrase.padEnd(42,'字'),[]).length;}
