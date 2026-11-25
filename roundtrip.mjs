@@ -21,12 +21,21 @@ export function parseReturnRows(rows){
  if(ci<0||si<0||ti<0)throw Error('必須包含資料代碼、座號、評語欄');
  return rows.slice(1).filter(r=>r.some(x=>String(x??'').trim())).map(r=>({code:String(r[ci]??'').trim(),seat:String(r[si]??'').trim(),comment:String(r[ti]??'')}));
 }
-export function previewReturn(rows,batches,project,history=[]){
+export function parseReturnAudit(rows){
+ const result=new Map();if(!Array.isArray(rows)||!rows.length)return result;
+ const header=rows[0].map(x=>String(x??'').trim()),ci=header.indexOf('資料代碼'),ri=header.indexOf('結果');
+ if(ci<0||ri<0)return result;
+ for(const row of rows.slice(1)){const code=String(row[ci]??'').trim(),status=String(row[ri]??'').trim();if(!code)continue;
+  result.set(code,result.has(code)?'重複覆核紀錄':status);
+ }
+ return result;
+}
+export function previewReturn(rows,batches,project,history=[],audit=new Map()){
  const counts=new Map();for(const x of rows)counts.set(x.code,(counts.get(x.code)||0)+1);
  const proposalCounts=new Map();for(const x of rows)if(x.comment){const n=normalize(x.comment);proposalCounts.set(n,(proposalCounts.get(n)||0)+1);}
  const entries=rows.map(x=>{
   const batch=batches.find(b=>Array.isArray(b.mapping)&&b.mapping.some(m=>m.code===x.code)),m=batch?.mapping.find(m=>m.code===x.code),r=project.students.find(y=>y.id===m?.id);
-  const errors=[];
+  const errors=[],advisories=[];const verdict=audit.get(x.code);if(verdict==='未通過'||verdict==='重複覆核紀錄')errors.push('AI 覆核未通過或紀錄衝突');else if(verdict==='待教師核對')advisories.push('AI 標記待教師核對，請閱讀後自行勾選採用');
   if(counts.get(x.code)>1)errors.push('重複資料代碼');
   if(!batch||!m)errors.push('未知交接代碼');
   if(batch&&batch.projectId!==project.id)errors.push('非目前班級');
@@ -39,7 +48,7 @@ export function previewReturn(rows,batches,project,history=[]){
   if(!x.comment)errors.push('無可採用評語');
   if(x.comment&&proposalCounts.get(normalize(x.comment))>1)errors.push('回傳評語完全重複');else if(x.comment&&rows.some(y=>y!==x&&y.comment&&similarity(x.comment,y.comment)>.78))errors.push('回傳評語彼此高度相似');
   if(x.comment)errors.push(...validate(x.comment,[...history,...project.students.filter(y=>y.id!==r?.id&&y.comment).map(y=>y.comment)]));
-  return {...x,id:r?.id,name:r?.name||'',old:r?.comment||'',batchId:batch?.id||'',errors:[...new Set(errors)]};
+  return {...x,id:r?.id,name:r?.name||'',old:r?.comment||'',batchId:batch?.id||'',errors:[...new Set(errors)],advisories};
  });
  const used=new Set(entries.map(x=>x.batchId).filter(Boolean));if(used.size>1)for(const e of entries)e.errors.push('一次只接受同一交接批次');
  const batch=batches.find(b=>used.has(b.id));const missing=batch?batch.mapping.filter(m=>!counts.has(m.code)).map(m=>m.code):[];

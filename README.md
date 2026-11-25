@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.9.11-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v1.0.0**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，自動生成且符合硬性規範即可輸出 Excel 或 Word，不需逐筆確認；教師可自由修改。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v1.0.0 | 原定功能結案、回填覆核防護、跨班備份識別、下載相容性及工作台最終整理；CI 通過後才發布。 |
 | v0.9.11-beta | WebKit 行動版發布門檻、下載相容性、CI 同分支部署順序保護。 |
 | v0.9.10-beta | 內建規則查詢、語意試驗區、發布資源指紋、版本與本機無資料修改驗收。 |
 | v0.9.9-beta | 同儕衝突語意同義詞、禮節肯定衝突抑制、否定回歸。 |
@@ -191,3 +192,7 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 ### v0.9.11
 
 新增 Linux WebKit 行動版模擬驗收，測試觸控、完整評分自動生成、教師直接修改、重新開啟保存、Word/Excel下載、全班視圖及不發出外部請求。Blob下載連結暫時附加於文件並延後釋放，以改善相容性。CI 同分支僅保留最新執行，避免後續舊版覆蓋新版；WebKit 模擬不能取代實機 Safari 驗收。
+
+## v1.0.0 正式版發布條件
+
+原定18項程式功能已實作。正式版以完整 CI（Node、Chromium、46人整班、WebKit）及 Pages 成功為技術發布門檻，不把教師主觀語感或實機使用回饋列為尚未撰寫的程式。後者保留於使用者驗收與後續維護。此次結案修正：Excel 與 Word 使用同一本機 Blob 下載機制；編輯離開欄位不重建清單；回填讀檔競態防護及明確 AI 未通過結果的阻擋；待核對結果預設不勾選；跨班資料識別唯一性；工作台最終視覺整理。無外接 AI。發布是否成功以 Actions 及 Pages 記錄為準。
