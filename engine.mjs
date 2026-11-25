@@ -45,7 +45,7 @@ const observations=[
  {id:'rules',dim:5,positive:/遵守.{0,3}(團體規範|校規)|很自律/,negative:/不守規矩|違反校規|經常違規|服儀不整|不配合團體|不遵守團體規範/,good:'能配合團體規範',goal:'落實團體生活規範'},
  {id:'focus',dim:null,positive:/上課.{0,3}專注|學習專注|專心聽講/,negative:/分心|不專注|專注不足|注意力不集中/,good:'上課專注',goal:'提升專注的穩定度',neutral:/不易分心|不曾分心/},
  {id:'work',dim:null,positive:/按時.{0,3}(繳交|完成)作業/,negative:/遲交作業|不交作業|忘記交作業|作業未完成/,good:'能按時完成作業',goal:'養成按時完成作業的習慣'},
- {id:'peers',dim:null,positive:/與同學相處和睦|人際互動良好|待人和善/,negative:/與同學吵架|同儕衝突|常和同學爭執/,good:'與同學相處和睦',goal:'以平和方式與同學溝通'},
+ {id:'peers',dim:2,positive:/與同學相處和睦|人際互動良好|待人和善/,negative:/與同學吵架|同儕衝突|(?:與|和|跟)同學(?:發生)?(?:爭執|口角|衝突|吵架)/,good:'與同學相處和睦',goal:'以平和方式與同學溝通'},
  {id:'personality',dim:null,positive:/有主見|有自己的想法|獨立思考/,good:'有自己的想法'},
  {id:'quiet',dim:null,positive:/個性內向|沉穩內斂|個性安靜|文靜|個性沉穩/,good:'個性沉靜'},
  {id:'confidence',dim:null,negative:/缺乏自信|不夠自信|需要.{0,4}自信|不敢表達|希望.{0,4}勇於表達/,positive:/勇於表達|有自信/,good:'能主動表達想法',goal:'逐步建立自信並勇於表達'},
@@ -227,4 +227,4 @@ function sameRatingTheme(a,b){
 }
 
 // Level 3 means adequate, not excellent. Praise only the rated dimension, without inventing concrete deeds.
-const basicStrengths=[['日常作息大致有序','生活常規大致能配合'],['大致能維持環境整潔','整潔習慣已有基本表現'],['與人應對大致合宜','大致能維持基本禮節'],['大致能配合班級事務','班級服務已有基本表現'],['待人誠信大致符合期待','日常言行大致合宜'],['大致能配合團體規範','自我管理已有基本表現']];
+const basicStrengths=[['日常作息大致有序','生活常規大致能配合'],['大致能維持環境整潔','整潔習慣已有基本表現'],['與人應對大致合宜','大致能維持基本禮節'],['大致能配合班級事務','班級服務已有基本表現'],['待人誠信大致合宜','日常言行大致合宜'],['大致能配合團體規範','自我管理已有基本表現']];

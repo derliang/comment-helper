@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.9.8-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.9.9-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.9.9-beta | 同儕衝突語意同義詞、禮節肯定衝突抑制、否定回歸。 |
 | v0.9.8-beta | 3級適度肯定與低分改善方向；保留具體觀察優先、避免不實優點。 |
 | v0.9.7-beta | 本機候選排序剪枝、延後風格計算、固定合成資料輸出回歸。 |
 | v0.9.6-beta | 手機篩選與選用 AI 展開排版、全班矩陣局部捲動、行動版溢出診斷。 |
@@ -176,3 +177,7 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 ### v0.9.8
 
 當沒有4–5分可作肯定時，以3分向度的基本表現作為有依據的適度肯定，之後提出低分向度的成長方向。若全部1–2分且無明確優點，仍使用尊重的中性開頭。補充觀察已指出同向度問題時不採用該向度泛化肯定。
+
+### v0.9.9
+
+新增「與／和／跟同學爭執、口角、衝突、吵架」等表述對應平和溝通，將同儕互動問題與禮節向度的泛化肯定交叉檢查。否定語句如「不再與同學爭執」不視為現存問題。
