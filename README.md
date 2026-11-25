@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v1.9.0**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v1.10.0**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，自動生成且符合硬性規範即可輸出 Excel 或 Word，不需逐筆確認；教師可自由修改。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -66,6 +66,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 | v1.5.0 | NLG 2.1.0：依證據建立學期人物輪廓、融合肯定語句及自然措辭排序。 |
 | v1.6.0 | NLG 2.2.0：證據式篇章關聯、優勢延伸及跨句重複降權。 |
 | v1.9.0 | NLG 2.5.0：本機教師風格結構學習與受限排序。 |
+| v1.10.0 | 全站介面改版：頂部導覽、名單＋評分面板、四步驟引導、工具收進選單、手機名單→評分；功能與評語引擎不變。 |
 | v1.8.0 | NLG 2.4.0：多目標配重、具體語意核心與語言品質評估。 |
 | v1.7.0 | NLG 2.3.0：全班語意指紋與主題搭配去重排序。 |
 | v1.4.1 | 學期人物整體描述、單次事件範圍、語意涵蓋排序與候選特徵快取。 |
@@ -274,6 +275,10 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 ### v1.8.0
 
 整合多缺點配重與語意核心檢查，新增語言重複與節奏評估，保留證據、字數及既有功能優先；合成案例直接測試通過，完整 CI 與部署另行驗收。
+
+### v1.10.0
+
+全站頁面改版（依 `docs/design/DESIGN.md`）：頂部單列導覽取代側欄；工作台改為「名單＋評分面板」雙區與匯入→評分→檢查→下載的步驟引導；下載與批次、AI 交接等次要工具收進「下載」「更多工具」選單；手機採名單→評分逐層進入與底部分頁；對話框桌機置中、手機由下方滑出。僅調整畫面，評語引擎、資料格式與既有功能不變；移除舊版「清單顯示密度」選項。
 
 ### v1.9.0
 

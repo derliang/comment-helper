@@ -24,15 +24,15 @@ try:
         def accept(d):
             dialogs.append(d.message);d.accept()
         page.on('dialog',accept)
-        page.goto(url);page.locator('#importBtn').click();page.locator('#rosterFile').set_input_files(f);page.locator('#previewImport').click();expect(page.locator('#importPreview')).to_contain_text('辨識 46 人');page.locator('#applyImport').click()
+        page.goto(url);page.locator('#menuTools summary').click();page.locator('#importBtn').click();page.locator('#rosterFile').set_input_files(f);page.locator('#previewImport').click();expect(page.locator('#importPreview')).to_contain_text('辨識 46 人');page.locator('#applyImport').click()
         page.wait_for_function("document.querySelector('#commentProgressText').textContent.includes('46 / 46')",timeout=120000)
         data=page.evaluate('JSON.parse(localStorage.getItem("comment-helper-v1"))');students=data['projects'][0]['students'];assert len(students)==46
         assert all(not r.get('confirmed') and 42<=len(r['comment'])<=50 for r in students);assert len({r['comment'] for r in students})==46
         before=len(dialogs)
-        with page.expect_download() as dl:page.locator('#excel').click()
+        with page.expect_download() as dl:page.locator('#menuDl summary').click();page.locator('#excel').click()
         result=tmp/'formal.xlsx';dl.value.save_as(result)
         rows=list(load_workbook(result,read_only=True).active.values);assert len(rows)==47;assert rows[0]==('座號','姓名','評語');assert [x[2] for x in rows[1:]]==[r['comment'] for r in students]
-        with page.expect_download() as dl:page.locator('#word').click()
+        with page.expect_download() as dl:page.locator('#menuDl summary').click();page.locator('#word').click()
         resultdoc=tmp/'formal.docx';dl.value.save_as(resultdoc)
         with zipfile.ZipFile(resultdoc) as z:
             root=ET.fromstring(z.read('word/document.xml'));ns={'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main'};assert len(root.findall('.//w:tr',ns))==47
@@ -43,8 +43,8 @@ try:
         page.locator('[data-tab="settings"]').click();page.locator('#restore').set_input_files(restore);page.locator('[data-tab="work"]').click()
         page.wait_for_function("document.querySelector('#commentProgressText').textContent.includes('46 / 46')",timeout=120000)
         page.set_viewport_size({'width':375,'height':812});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1'),page.evaluate("""Array.from(document.querySelectorAll('body *')).filter(e=>{const b=e.getBoundingClientRect();return b.width&&b.right>innerWidth+1}).slice(0,15).map(e=>[e.tagName,e.id,e.className?.toString(),Math.round(e.getBoundingClientRect().right)])""")
-        page.locator('#matrixBtn').click();expect(page.locator('.matrix tbody tr')).to_have_count(46);page.locator('#closeClassDialog').click()
-        page.locator('#classEditBtn').click();expect(page.locator('[data-class-comment]')).to_have_count(46);page.locator('#closeClassDialog').click()
+        page.locator('#menuTools summary').click();page.locator('#matrixBtn').click();expect(page.locator('.matrix tbody tr')).to_have_count(46);page.locator('#closeClassDialog').click()
+        page.locator('#menuTools summary').click();page.locator('#classEditBtn').click();expect(page.locator('[data-class-comment]')).to_have_count(46);page.locator('#closeClassDialog').click()
         assert not errors,errors
         browser.close();print('PASS: 46-pupil end-to-end import, automatic formal comments, no confirmations, Excel/Word export, restore, mobile views')
 finally:server.shutdown()

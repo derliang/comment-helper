@@ -31,7 +31,7 @@ try:
         page.goto(url+'/');page.locator('#importBtn').tap();page.locator('#rosterFile').set_input_files(f);page.locator('#previewImport').tap();expect(page.locator('#importPreview')).to_contain_text('辨識 2 人');page.locator('#applyImport').tap()
         expect(page.locator('#commentProgressText')).to_contain_text('2 / 2',timeout=90000)
         def width_ok():assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1')
-        width_ok();page.locator('article.student').first.locator('[data-toggle]').tap();width_ok()
+        width_ok();page.locator('.row').first.tap();width_ok()
         original=page.locator('[data-comment]').input_value();assert '守時' in original and 42<=len(original)<=50
         edited='熱心班級事務，待人誠懇且應對合宜；希望能掌握每日到校時間，事先做好準備，逐步養成守時的習慣。'
         page.locator('[data-comment]').fill(edited);page.locator('[data-note]').tap();expect(page.locator('[data-comment]')).to_have_value(edited)
