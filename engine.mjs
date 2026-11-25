@@ -49,7 +49,45 @@ const observations=[
  {id:'personality',dim:null,positive:/有主見|有自己的想法|獨立思考/,good:'有自己的想法'},
  {id:'quiet',dim:null,positive:/個性內向|沉穩內斂|個性安靜|文靜|個性沉穩/,good:'個性沉靜'},
  {id:'confidence',dim:null,negative:/缺乏自信|不夠自信|需要.{0,4}自信|不敢表達|希望.{0,4}勇於表達/,positive:/勇於表達|有自信/,good:'能主動表達想法',goal:'逐步建立自信並勇於表達'},
- {id:'study',dim:null,negative:/讀書方法.{0,4}(不佳|需調整)|需要.{0,3}複習|成績退步|成績不好|成績需提升/,positive:/成績優秀|成績很好|學習成果亮眼|成績出色/,good:'學習成果亮眼',goal:'建立規律複習習慣'}
+ {id:'study',dim:null,negative:/讀書方法.{0,4}(不佳|需調整)|需要.{0,3}複習|成績退步|成績不好|成績需提升/,positive:/成績優秀|成績很好|學習成果亮眼|成績出色/,good:'學習成果亮眼',goal:'建立規律複習習慣'},
+ {id:"queue",dim:0,expanded:true,positive:/排隊.{0,3}(有序|守秩序)|依序排隊/,negative:/插隊|排隊.{0,3}(推擠|喧鬧)/,good:"排隊能遵守秩序",goal:"養成依序排隊的習慣",progress:"排隊秩序已有改善"},
+ {id:"mealRoutine",dim:0,expanded:true,positive:/用餐.{0,4}(有序|守秩序)|遵守用餐規定/,negative:/用餐.{0,4}(喧鬧|秩序不佳)|用餐時大聲喧嘩/,good:"用餐時能維持秩序",goal:"留意用餐時的秩序",progress:"用餐秩序已有改善"},
+ {id:"assemblySpeed",dim:0,expanded:true,positive:/集合.{0,3}迅速|準時集合/,negative:/集合.{0,4}(拖拉|動作緩慢)|集合經常落後/,good:"能迅速完成集合",goal:"養成迅速集合的習慣",progress:"集合速度已有改善"},
+ {id:"assemblyOrder",dim:0,expanded:true,positive:/集合.{0,3}有序|行進間保持秩序/,negative:/集合.{0,4}喧鬧|集合時大聲喧嘩|行進間推擠/,good:"集合時能維持秩序",goal:"留意集合與行進的秩序",progress:"集合秩序已有改善"},
+ {id:"sharedSpace",dim:0,expanded:true,positive:/愛惜公物|妥善使用公物|維護公共設施/,negative:/任意破壞公物|不愛惜公物|隨意使用公物/,good:"能愛惜公物",goal:"養成愛護公物的習慣",progress:"使用公物的態度已有改善"},
+ {id:"dailyPreparation",dim:0,expanded:true,positive:/事前準備妥當|事先備妥用品|生活用品準備齊全/,negative:/生活用品準備不足|經常臨時找用品/,good:"能事先備妥用品",goal:"養成事前準備的習慣",progress:"事前準備已有改善"},
+ {id:"returnSeat",dim:0,expanded:true,positive:/下課後按時回座|鐘響即回座/,negative:/鐘響後仍未回座|鐘響後仍在聊天|上課鐘響未回座/,good:"能按時回到座位",goal:"養成鐘響即回座的習慣",progress:"回座情形已有改善"},
+ {id:"deskOrganization",dim:1,expanded:true,positive:/桌面.{0,3}(整齊|清爽)|抽屜.{0,3}整齊/,negative:/桌面.{0,3}(雜亂|堆滿雜物)|抽屜.{0,3}(雜亂|堆滿雜物)/,good:"能維持個人區域整齊",goal:"養成隨手整理個人區域的習慣",progress:"個人區域整理已有改善"},
+ {id:"waste",dim:1,expanded:true,positive:/確實垃圾分類|落實垃圾分類|隨手清理垃圾/,negative:/亂丟垃圾|垃圾未分類|垃圾隨意丟棄/,good:"能妥善處理垃圾",goal:"落實垃圾分類與清理",progress:"垃圾處理習慣已有改善"},
+ {id:"mealCleanup",dim:1,expanded:true,positive:/餐後.{0,4}(清理桌面|收拾餐具)|餐具收拾妥當/,negative:/餐後未清理桌面|餐具未收拾|吃完未收拾/,good:"餐後能妥善收拾",goal:"養成餐後收拾的習慣",progress:"餐後收拾情形已有改善"},
+ {id:"cleanTools",dim:1,expanded:true,positive:/掃具歸位|清潔用具歸位|打掃後收妥用具/,negative:/掃具未歸位|掃具亂放|清潔用具亂放/,good:"能將清潔用具歸位",goal:"養成清潔用具歸位的習慣",progress:"掃具收放已有改善"},
+ {id:"cleanFinish",dim:1,expanded:true,positive:/負責區域.{0,4}(乾淨|清潔)|仔細清理責任區/,negative:/責任區未清理|清潔工作敷衍|打掃草率/,good:"能妥善維護責任區",goal:"確實完成責任區清潔",progress:"責任區清潔已有改善"},
+ {id:"greeting",dim:2,expanded:true,positive:/主動.{0,3}(問好|打招呼)|見到師長.{0,3}問好/,negative:/見到師長.{0,3}(不打招呼|未問好)|應對時未問候|不主動問好|未主動問好/,good:"能主動向人問好",goal:"養成主動問候的習慣",progress:"問候禮節已有改善"},
+ {id:"speechTone",dim:2,expanded:true,positive:/說話.{0,3}(溫和|有分寸)|語氣.{0,3}和緩/,negative:/語氣.{0,3}(不耐煩|強硬|尖銳)|說話.{0,3}(傷人|太直接)|口出惡言/,good:"說話能留意分寸",goal:"練習以溫和語氣表達",progress:"說話語氣已有改善"},
+ {id:"interrupt",dim:2,expanded:true,positive:/耐心聽完.{0,4}(發言|說話)|不打斷他人/,negative:/打斷.{0,4}(他人|同學|老師).{0,3}(發言|說話)|插話|搶話/,good:"能耐心聽完他人發言",goal:"練習聽完再表達想法",progress:"傾聽表現已有改善"},
+ {id:"respectBoundary",dim:2,expanded:true,positive:/尊重他人界線|尊重同學隱私|尊重個人空間/,negative:/未經同意翻閱|擅自翻看同學物品|取笑他人|嘲笑同學/,good:"能尊重他人的界線",goal:"留意他人的感受與界線",progress:"尊重他人的表現已有改善"},
+ {id:"emotion",dim:2,expanded:true,positive:/冷靜.{0,4}(處理分歧|表達意見)|能平和表達不滿/,negative:/情緒激動時.{0,4}(大聲|指責)|一言不合就生氣|容易因意見不同而生氣/,good:"能平和表達意見",goal:"練習冷靜表達不同意見",progress:"情緒表達已有改善"},
+ {id:"apology",dim:2,expanded:true,positive:/主動道歉|願意道歉|適時表達歉意/,negative:/不願道歉|拒絕道歉/,good:"願意表達歉意",goal:"練習適時表達歉意",progress:"表達歉意的態度已有改善"},
+ {id:"taskFollowthrough",dim:3,expanded:true,positive:/按時完成班級交辦|交辦事項.{0,3}確實完成|確實完成值日工作/,negative:/交辦事項.{0,4}(未完成|忘記)|值日工作未完成|公務需要反覆催促/,good:"能確實完成交辦事項",goal:"養成確實完成交辦事項的習慣",progress:"交辦事項完成情形已有改善"},
+ {id:"division",dim:3,expanded:true,positive:/主動分擔工作|主動分工|配合團隊分工/,negative:/拒絕分工|分配工作後未執行|分工不配合/,good:"能配合團體分工",goal:"練習承擔分配的工作",progress:"團體分工表現已有改善"},
+ {id:"classEvents",dim:3,expanded:true,positive:/協助班級活動|主動籌備班級活動|熱心協助活動準備/,negative:/班級活動交辦事項未完成|班級活動分工未落實/,good:"能協助班級活動",goal:"確實完成活動分工",progress:"活動分工表現已有改善"},
+ {id:"handover",dim:3,expanded:true,positive:/交接工作清楚|確實交接|主動交代工作進度/,negative:/工作交接不清楚|未交接班級工作|未回報工作進度/,good:"能妥善交接或回報工作",goal:"養成清楚交接與回報的習慣",progress:"工作交接已有改善"},
+ {id:"carePeers",dim:3,expanded:true,positive:/關懷同學|主動關心同學|關心有需要的同學/,good:"能關懷同學"},
+ {id:"accountability",dim:4,expanded:true,positive:/主動承認疏失|勇於承認錯誤|願意承擔疏失/,negative:/推卸責任|將錯誤歸咎他人|不願承認錯誤/,good:"願意面對自身疏失",goal:"練習誠實面對自身疏失",progress:"面對疏失的態度已有改善"},
+ {id:"promise",dim:4,expanded:true,positive:/遵守約定|履行承諾|說到做到/,negative:/未遵守約定|答應後未履行|未履行承諾/,good:"能履行與他人的約定",goal:"養成履行約定的習慣",progress:"履行約定的情形已有改善"},
+ {id:"assessmentIntegrity",dim:4,expanded:true,positive:/遵守考試規則|獨立完成評量/,negative:/考試作弊|抄襲作業|抄同學作業|評量時抄答案/,good:"能重視評量規範",goal:"重視評量與作業的誠信",progress:"評量誠信表現已有改善"},
+ {id:"borrowing",dim:4,expanded:true,positive:/借用.{0,4}按時歸還|如期歸還借用物品|借物有還/,negative:/借用物品未歸還|借物未還|借用物品逾期未還/,good:"能按時歸還借用物品",goal:"養成按約歸還借用物品的習慣",progress:"歸還物品情形已有改善"},
+ {id:"reportFacts",dim:4,expanded:true,positive:/如實說明情況|據實說明|坦誠說明經過/,negative:/隱瞞事實|刻意隱瞞疏失|說明情況不實/,good:"能如實說明情況",goal:"練習據實說明事情經過",progress:"說明事情的態度已有改善"},
+ {id:"uniform",dim:5,expanded:true,positive:/服儀符合規定|服裝符合校規|依規定穿著制服/,negative:/未依規定穿著制服|服儀違規|服裝不符規定/,good:"能遵守服儀規範",goal:"落實學校的服儀規範",progress:"服儀表現已有改善"},
+ {id:"phone",dim:5,expanded:true,positive:/依規定使用手機|依規定繳交手機/,negative:/上課擅自使用手機|未依規定繳交手機|違規使用手機/,good:"能配合手機使用規範",goal:"養成依規範使用手機的習慣",progress:"手機使用情形已有改善"},
+ {id:"reminders",dim:5,expanded:true,positive:/無須提醒即完成|不需提醒即可完成|能自行完成例行工作/,negative:/經多次提醒才完成|反覆提醒才完成|需要多次催促/,good:"能自行完成例行工作",goal:"練習主動完成例行工作",progress:"主動完成工作的情形已有改善"},
+ {id:"priorities",dim:5,expanded:true,positive:/能分配工作先後|善於安排工作順序|先完成應辦事項/,negative:/未分清工作先後|做事缺乏先後順序|常漏掉應辦事項/,good:"能安排工作先後順序",goal:"練習安排事項的先後順序",progress:"工作安排已有改善"},
+ {id:"selfCheck",dim:5,expanded:true,positive:/完成後主動檢查|能自行檢查工作|主動核對應辦事項/,negative:/完成後未檢查|做完就忘記核對|未核對應辦事項/,good:"能主動檢查完成的工作",goal:"養成完成後自我檢查的習慣",progress:"自我檢查習慣已有改善"},
+ {id:"requestPermission",dim:5,expanded:true,positive:/離開前先報備|離開前主動報備|主動完成請假程序/,negative:/未經同意離開教室|擅自離開教室|未完成請假程序/,good:"能配合報備規範",goal:"養成事先報備的習慣",progress:"報備情形已有改善"},
+ {id:"classNoise",dim:5,expanded:true,positive:/上課能維持安靜|上課能遵守秩序/,negative:/上課聊天|上課講話影響他人|上課時大聲說話/,good:"上課能維持秩序",goal:"留意上課時的言談與秩序",progress:"上課秩序已有改善"},
+ {id:"askHelp",dim:null,expanded:true,positive:/主動請教|遇到問題.{0,4}請教|善於提出問題/,negative:/遇到問題不願求助|遇到困難不敢請教/,good:"遇到問題能主動請教",goal:"練習適時提出問題與求助",progress:"求助與提問表現已有改善"},
+ {id:"reflect",dim:null,expanded:true,positive:/願意接受建議|能接受指正|願意調整做法/,negative:/拒絕接受建議|不願接受指正|不願調整做法/,good:"願意聽取建議",goal:"練習聽取建議並調整做法",progress:"接受建議的態度已有改善"},
+ {id:"selfReflection",dim:null,expanded:true,positive:/主動反思|主動檢討自己的做法/,good:"能反思自己的做法"}
 ];
 // Match the evidence locally; a negated or merely proposed strength is not an observed strength.
 function allowedPositive(clause,re){
@@ -63,13 +101,44 @@ function allowedNegative(clause,re){
  const m=re?.exec(clause);if(!m)return false;
  return !/(?:沒有|未曾|從未|不曾|不再|沒有再|很少|並未)(?:再|經常|常常|常|容易|出現|有)?$/.test(clause.slice(0,m.index));
 }
+// Expanded rules use local match spans rather than suppressing a whole sentence.
+// Explicit improvement is evidence of a change, not proof of perfection.
+function expandedEvidence(clause,r){
+ const hits=re=>re?[...clause.matchAll(new RegExp(re.source,'g'))]:[];
+ const proposed=prefix=>/(?:希望|期待|期許|建議|應該|需要|若能|如果能|有待|請).{0,8}$/.test(prefix);
+ const negated=prefix=>/(?:沒有|未曾|從未|不曾|並未|並不|尚未|不|未|很少|不常|無法|不願|拒絕)(?:再|經常|常常|常|容易|出現|有|能|主動)?$/.test(prefix);
+ let negative=false,positive=false,progress=false,recognized=false;
+ for(const m of hits(r.negative)){
+  const before=clause.slice(0,m.index),after=clause.slice(m.index+m[0].length);
+  if(proposed(before))continue;
+  if(/(?:已)?不再$|沒有再$/.test(before)||/^(?:的)?(?:情形|情況|表現|習慣|問題)?(?:已經改善|已有改善|已改善|有所改善|明顯改善|已經減少)/.test(after)){progress=true;recognized=true;continue;}
+  if(negated(before)){recognized=true;continue;}
+  negative=true;recognized=true;
+ }
+ for(const m of hits(r.positive)){
+  const before=clause.slice(0,m.index);
+  if(proposed(before))continue;
+  if(negated(before)||/(?:不再|沒有再)$/.test(before)){recognized=true;continue;}
+  positive=true;recognized=true;
+ }
+ return {negative,positive,progress,recognized};
+}
 export function analyzeObservation(note='',scores=[],custom=[]){
  const clauses=String(note).normalize('NFKC').split(/[，,。；;、\n！!]+|但是|但|然而|不過|而且|並且|(?=現在|目前|近期|最近)/).map(x=>x.trim()).filter(Boolean);
- const positives=[],goals=[],unknown=[],conflicts=[],goalDims=new Set(),positiveDims=new Set();
+ const positives=[],goals=[],unknown=[],conflicts=[],goalDims=new Set(),positiveDims=new Set(),expandedSignals=new Map();
  for(const clause of clauses){
   // Old events alone do not establish a current behavior; keep them visible for manual review.
   if(/過去|以前|曾經|原本|一開始/.test(clause)&&!/(?:目前|現在|仍然|依然|本學期|近期|最近|近來)/.test(clause)){unknown.push(clause);continue;}
   let found=false;for(const r of observations){
+  if(r.expanded){
+   const e=expandedEvidence(clause,r);
+   if(e.recognized)found=true;
+   if(e.negative||e.positive||e.progress){
+    const prev=expandedSignals.get(r.id)||{rule:r,negative:false,positive:false,progress:false};
+    expandedSignals.set(r.id,{rule:r,negative:prev.negative||e.negative,positive:prev.positive||e.positive,progress:prev.progress||e.progress});
+   }
+   continue;
+  }
   const neg=allowedNegative(clause,r.negative)&&!r.neutral?.test(clause)&&!(r.id==='punctual'&&r.positive?.test(clause));
   const pos=allowedPositive(clause,r.positive)&&!neg&&!/(?:不|未|沒有|缺乏|無法|難以|需要|希望能).{0,3}(?:主動|熱心|專注|有禮|誠實|遵守|勇於)/.test(clause);
   if(neg&&r.goal){goals.push(r.goal);if(r.dim!==null)goalDims.add(r.dim);found=true;if(r.dim!==null&&scores[r.dim]===5)conflicts.push('補充觀察與'+dims[r.dim]+'滿分並存，請核對。');}
@@ -83,7 +152,15 @@ export function analyzeObservation(note='',scores=[],custom=[]){
    if(/(?:沒有|不曾|不再|未曾|希望|期待|期許|建議|若能|不|未).{0,6}$/.test(before))continue;
    (r.kind==='positive'?positives:goals).push(r.phrase);if(dim!==null)(r.kind==='positive'?positiveDims:goalDims).add(dim);found=true;break;
   }
- }if(!found)unknown.push(clause);}
+  }if(!found)unknown.push(clause);}
+ for(const {rule:r,negative,positive,progress} of expandedSignals.values()){
+  if(negative&&r.goal){
+   goals.push(r.goal);
+   if(r.dim!==null){goalDims.add(r.dim);if(scores[r.dim]===5)conflicts.push('補充觀察與'+dims[r.dim]+'滿分並存，請核對。');}
+   if(positive||progress)conflicts.push('同一觀察主題有正反或改善與現存問題並列：'+r.goal+'，請核對實況。');
+  }else if(progress&&r.progress){positives.push(r.progress);if(r.dim!==null)positiveDims.add(r.dim);}
+  else if(positive&&r.good){positives.push(r.good);if(r.dim!==null){positiveDims.add(r.dim);if(scores[r.dim]<=2&&scores[r.dim]>=1)conflicts.push('補充觀察與'+dims[r.dim]+'低分並存，請核對。');}}
+ }
  return {positives:[...new Set(positives)],goals:[...new Set(goals)],unknown,conflicts:[...new Set([...conflicts,...[...goalDims].filter(i=>positiveDims.has(i)).map(i=>'同一向度有肯定與成長觀察：'+dims[i]+'，保留具體事實並核對。')])],goalDims:[...goalDims],positiveDims:[...positiveDims]};
 }
 
@@ -212,6 +289,10 @@ const strengthVariations=[
  [['日常自我管理表現良好','能自律並配合團體規範'],['能配合團體生活規範','日常自律表現良好']]
 ];
 function goalOutcomes(g){
+ if(/依序排隊|集合的習慣|集合與行進|鐘響即回座|用餐時的秩序/.test(g))return ['讓團體生活更加有序','讓自己與同學都能順利進行活動'];
+ if(/歸還借用物品|履行約定|據實說明|面對自身疏失|評量與作業的誠信/.test(g))return ['在日常相處中建立彼此的信任','使言行更值得信賴'];
+ if(/問候的習慣|溫和語氣|聽完再表達|感受與界線|冷靜表達|表達歉意/.test(g))return ['讓彼此相處更加融洽','使團體互動更加和諧'];
+ if(/完成交辦事項|承擔分配|活動分工|交接與回報/.test(g))return ['讓團體工作進行得更順利','為班級生活多盡一份心力'];
  if(/守時|時間|作息/.test(g))return ['讓每天的作息安排更從容','使日常生活安排更加有序'];
  if(/整潔|整理|打掃/.test(g))return ['使自己與同學共享舒適的生活空間','讓日常整潔工作更能落實'];
  if(/傾聽|溝通|應對|尊重|合作/.test(g))return ['讓彼此相處更加融洽','使團體互動更加和諧'];
@@ -223,14 +304,14 @@ function goalOutcomes(g){
 
 function sameRatingTheme(a,b){
  const theme=s=>positive.findIndex((pair,i)=>pair.includes(s)||strengthVariations[i].flat().includes(s)||basicStrengths[i].includes(s));
- const x=theme(a),y=theme(b);return x>=0&&x===y;
+ const x=theme(a),y=theme(b);if(x>=0&&x===y)return true;const expandedTheme=s=>observations.find(r=>r.expanded&&r.dim!==null&&(r.good===s||r.progress===s))?.dim;return x>=0&&expandedTheme(b)===x||y>=0&&expandedTheme(a)===y;
 }
 
 // Level 3 means adequate, not excellent. Praise only the rated dimension, without inventing concrete deeds.
 const basicStrengths=[['日常作息大致有序','生活常規大致能配合'],['大致能維持環境整潔','整潔習慣已有基本表現'],['與人應對大致合宜','大致能維持基本禮節'],['大致能配合班級事務','班級服務已有基本表現'],['待人誠信大致合宜','日常言行大致合宜'],['大致能配合團體規範','自我管理已有基本表現']];
 
 /** Read-only descriptions, sourced directly from the actual built-in rules. */
-export const builtinSemanticRules=observations.map(r=>Object.freeze({id:r.id,dimension:r.dim===null?'不限向度':dims[r.dim],positive:r.positive?.source||'',negative:r.negative?.source||'',exclusion:r.neutral?.source||'',strength:r.good||'',goal:r.goal||''}));
+export const builtinSemanticRules=observations.map(r=>Object.freeze({id:r.id,dimension:r.dim===null?'不限向度':dims[r.dim],positive:r.positive?.source||'',negative:r.negative?.source||'',exclusion:r.neutral?.source||'',strength:r.good||'',goal:r.goal||'',progress:r.progress||''}));
 export function inspectObservation(scores,note='',profile={}){
  if(!complete(scores))throw Error('試驗需完整六向度等第');
  const custom=profile.semanticRules||[],analysis=analyzeObservation(note,scores,custom),comment=draft(scores,note,[],profile);

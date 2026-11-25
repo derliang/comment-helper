@@ -120,3 +120,5 @@ button.handoff-action{background:#eeeafa;color:#51417c;border-color:#d1c8e7}butt
 .preview{border-radius:12px}.preview textarea{border-color:#bcd5ca;line-height:1.85}.comment-actions button{font-size:12px}.comment-actions [data-copy]{color:#245a46}
 .issues:not(:empty){padding:7px 0;line-height:1.6}.return-error:not(:empty){line-height:1.6}
 @media(max-width:760px){main{padding-top:12px}.workspace-panel{padding:12px}.workspace-panel .section-heading h2,.roster-heading h2{font-size:18px}.workspace-kicker{font-size:10px!important}.download-toolbar{gap:6px}.download-label{flex-basis:100%}.download-toolbar .download-word,.download-toolbar .download-excel{flex:1 1 35%;min-height:40px}.student-head .name{font-size:14px}.comment-actions button{font-size:12px;min-height:38px}.roster-heading{margin-top:16px}}
+
+.semantic-filters label{display:flex;align-items:center;gap:8px;font-size:13px}.semantic-filters select{min-width:140px}.builtin-rule dd{white-space:normal}.builtin-rule summary{line-height:1.6}
