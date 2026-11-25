@@ -31,3 +31,5 @@ test('46-student mixed class passes hard validation without exact or high simila
 
 test('a resolved shortcoming does not suppress a different ongoing observation',async()=>{const {analyzeObservation}=await import('../engine.mjs');const r=analyzeObservation('不再遲到而且經常拖延',[4,4,4,4,4,3]);assert.ok(r.positives.includes('守時情形已有改善'));assert.ok(r.goals.includes('妥善規劃時間與工作'));assert.ok(!r.goals.includes('養成守時習慣'));});
 test('all excellent students receive maintenance expectations, not invented deficiencies',()=>{const c=draft([5,5,5,5,5,5]);assert.match(c,/持續|延續/);assert.doesNotMatch(c,/逐步養成|建立基本/);assert.deepEqual(validate(c),[]);});
+
+test('full uniform classes: all-low, all-middle and all-excellent stay distinct and exportable',()=>{for(const grade of [1,3,5]){const h=[];for(let i=0;i<46;i++){const c=draft(Array(6).fill(grade),'',h);assert.deepEqual(validate(c,h),[],grade+' '+i+' '+c);h.push(c);}assert.equal(new Set(h).size,46);}});
