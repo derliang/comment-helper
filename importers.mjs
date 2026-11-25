@@ -32,4 +32,4 @@ export function parseReportTables(tables){const result=[];for(const rows of tabl
  const m=clean(r[3]).match(/^(.+?)[:：](.+)$/);if(m){const j=dims.indexOf(m[1]);if(j>=0)current.scores[j]=score(m[2]);}if(r[7])current.comment+=r[7].replace(/\s+/g,'');
  }}return result;}
 export function historyEntries(records,source=''){return records.filter(r=>r.comment).map(r=>({comment:r.comment,studentId:r.studentId||'',seat:r.seat||'',name:r.name||'',source}));}
-export function mergeHistory(old,entries){const key=r=>[r.source||'',r.studentId||'',r.name||'',seatKey(r.seat),clean(r.comment)].join('|');const seen=new Set(old.map(key));return [...old,...entries.filter(r=>{const k=key(r);if(!r.comment||seen.has(k))return false;seen.add(k);return true;})];}
+export function mergeHistory(old,entries){const key=r=>[r.source||'',r.name||'',seatKey(r.seat),clean(r.comment)].join('|');const out=old.map(r=>({...r}));for(const r of entries){if(!r.comment)continue;const k=key(r),existing=out.find(x=>key(x)===k&&(!x.studentId||!r.studentId||clean(x.studentId)===clean(r.studentId)));if(existing){existing.studentId||=r.studentId;continue;}out.push({...r});}return out;}

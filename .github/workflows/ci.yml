@@ -14,7 +14,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check app.mjs && node --check engine.mjs && node --check importers.mjs && node --test
+      - run: node --check app.mjs && node --check engine.mjs && node --check importers.mjs && node --check advanced.mjs && node --check server/ai-proxy.mjs && node --test
+      - name: Build static site with pinned vendor scripts
+        run: bash scripts/build-site.sh
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install browser test dependencies
+        run: |
+          pip install playwright==1.51.0 openpyxl==3.1.5
+          python -m playwright install --with-deps chromium
+      - name: Browser release gate
+        run: python tests/browser-smoke.py
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: site
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: test
@@ -27,12 +42,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - run: mkdir site && cp index.html style.css app.mjs engine.mjs importers.mjs original-prompt.md site/
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4

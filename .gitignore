@@ -3,3 +3,5 @@ node_modules/
 *.xlsx
 *.docx
 *backup.json
+site/
+__pycache__/

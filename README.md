@@ -1,49 +1,88 @@
-# 拾語 · 教師評語小幫手
+# 拾語 · 教師評語小幫手（Comment Helper）
 
-MVP v0.1.5-alpha，純靜態網站；適用 GitHub Pages。預設不需要 API 金鑰。真實學生資料不在此儲存庫。
+[![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-## 本機操作
+**版本：v0.2.0-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
-在專案資料夾執行 `python -m http.server 8000`，開啟 `http://localhost:8000`。請使用 localhost 或 HTTPS，直接雙擊 HTML 無法完整使用 JavaScript 模組。
+以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
-## 目前功能
+## 特色與操作流程
 
-- 學期班級、名單貼上與 XLSX/CSV 匯入（多工作表合併，支援舊版欄位後綴、五級文字與 Word 校務報表）。
-- 垂直展開清單、三種評分狀態、綠至紅五級量表、六向度等權平均星等（暫定）。
-- 即時規則式草稿、補充觀察、字數與文字相似度檢查、人工確認鎖定。
-- 歷史評語文字、試算表或 Word 校務報表匯入（去重與身分欄位保留）、常用詞特徵分析、全班與跨學期文字相似度比對。
-- localStorage 自動儲存、JSON 備份/還原、已確認評語 Word/Excel 匯出。
+1. 建立學期班級，貼上學生名單或匯入 XLSX、CSV、TXT、DOCX。支援多工作表、舊版欄位、校務系統跨列 Word 報表及已有部分評分的檔案。
+2. 垂直學生清單顯示「尚未評／評分中／已評」。點擊姓名展開六向度評分、個別補充資料及即時草稿。
+3. 五級量表固定由 5 到 1，綠→黃綠→黃→橙→紅。六向度為日常生活表現、整潔習慣、禮節、班級服務、待人誠信、自律自重。整體星等採等權平均，未完整評分不顯示星等。
+4. 一鍵設定單一學生全部分數；全班基準只補未評分欄位，保留已填分數。鍵盤聚焦評分格後按 5～1，選取並跳至下一向度；Shift+Enter 完成評分。批次生成不覆蓋已確認評語。
+5. 補充觀察、即時生成、文字編輯、字數與重複檢查、教師確認鎖定。需先解除鎖定才可改評分、學號、觀察或評語。
+6. 歷史評語支援匯入、搜尋及核對學號。跨學期以已確認學號連結，不以同座號或同姓名推斷同一學生。重複匯入已核對學號的歷史檔也會去重。
+7. 從歷史評語統計教師偏好用語、字數、標點及稱呼方式，教師確認 AI 草稿的人工修改可更新偏好。選用 AI 可參考少量經初步去識別的樣本及同一學生過往評語。
+8. 正式 Excel／Word 僅匯出已確認且符合硬性檢查的評語；完整 Excel 則供教師內部留存（包括學號、評分、星等、補充觀察與草稿）。
+9. 自動儲存、工作位置恢復、JSON 完整備份／還原。標題列、瀏覽器分頁、頁尾皆顯示版本號。
 
-## 限制與安全
+## AI 生成與語意重複核對
 
-- 本機規則產生的是草稿，僅辨識少量補充觀察關鍵字，不是完整 AI 或真正機器學習；風格分析也僅是簡易統計。提供可選 HTTPS AI 服務端點，未附實際後端。端點須自行建置、驗證、設定 CORS 並遵守學校個資政策。
-- 本機儲存未加密、未跨裝置同步，且清除瀏覽器資料可能造成遺失。勿在共用電腦輸入真實資料。XLSX/Word 功能需外部 CDN 函式庫，請先以假資料驗收；正式使用前建議改成經稽核的本地依賴。
-- 原始 Prompt 原封保存，最新六向度及不臆測學業的規則在 API 請求中另列。未實作語意模型比對、AI 自動學習模型微調、完整稽核及跨學期身分管理。
-- 已確認評語不得自動覆蓋；評分變動後需解除鎖定並重新確認。匯出目前僅正式版。
+預設是本機規則草稿，適合快速試用，不等於大型語言模型或真正模型權重訓練。離線模式只能辨識有限的觀察詞，教師仍需核對。所有模式都保留原始 `original-prompt.md`，新版六向度規則作為獨立優先補充，不修改原文。
 
-## 測試與部署
+選用「設定與備份」的 AI 服務後，可依教師輸入的任意補充觀察生成評語、重試不合格字數、參考教師個人化風格。在本機以完整文字及字元片段相似度檢查歷史和同班評語；若另行允許分享歷史範例，可由支援 review 協定的 AI 端點核對同一學號及最多數則較相似的歷史樣本。模型提示需人工核對，並非保證涵蓋所有語意重複。預設不傳送歷史全文。
+
+### 選用自架 AI 服務（須另行部署，GitHub Pages 不執行後端）
+
+專案提供 `server/ai-proxy.mjs`，使用 Node.js 22、原生 HTTP/fetch 與 OpenAI 相容 Chat Completions JSON API。請使用你獲授權的模型與服務，並在可信的主機環境透過環境變數設定：
+
+| 環境變數 | 用途 |
+| --- | --- |
+| `AI_URL` | 供應商 HTTPS Chat Completions 完整端點 |
+| `AI_KEY` | 供應商 API 金鑰，只留在伺服器 |
+| `AI_MODEL` | 供應商實際提供的模型 ID，須支援 JSON object 回傳 |
+| `ACCESS_TOKEN` | 自訂強隨機服務存取密碼，不同於 API 金鑰 |
+| `ALLOWED_ORIGIN` | `https://derliang.github.io`（本機開發則填實際 localhost origin） |
+| `HOST` / `PORT` | 預設 `127.0.0.1` / `8787`；正式服務應放在 HTTPS 反向代理後方 |
 
 ```sh
+# 在可信的本機或伺服器設定上述環境變數後啟動
+node server/ai-proxy.mjs
+```
+
+在網頁設定填入自己的 HTTPS `.../generate` 網址和服務存取密碼，使用「虛構資料測試 AI 服務」先驗證。自訂端點接受 POST JSON，`mode: generate` 回傳 `{ "comment": "...", "warnings": [] }`；選用 `mode: review` 回傳原 comment、warnings 及 `semanticChecked: true`。服務存取密碼僅留在當次頁面記憶體，不寫入瀏覽器儲存、備份或 GitHub。未配置金鑰與服務時，使用預設本機模式即可。外部模型及費用由使用者的服務提供者決定。
+
+## 個資與安全
+
+- 公開儲存庫不包含任何真實學生名單、歷史評語、備份或金鑰。測試只使用合成資料；過往真實檔案的本機測試僅公布匿名總數。
+- 工作資料採瀏覽器本機儲存，未加密、沒有跨裝置同步；清除網站資料會遺失。請定期下載 JSON 備份，不在共用電腦輸入真實學生資訊。
+- AI 模式會向所設定的端點傳送評分與初步去識別的觀察文字。歷史樣本分享需額外同意；去識別不是匿名化保證，請先依學校資料政策審核。自架服務應使用 HTTPS、強存取密碼與適當網路限制；不要直接暴露未加密的 HTTP 服務。
+- 星等、評分及個人觀察是教師內部紀錄，不放入正式學生評語。歷史評語長度可超過 50 字，但新正式評語硬性限制 42～50 字。
+
+## 開發、測試與發布
+
+```sh
+# Node.js 22 與 curl
 node --check app.mjs
-node --check engine.mjs
-node --check importers.mjs
 node --test
+bash scripts/build-site.sh
+python -m http.server 8000 --directory site
+# 開啟 http://localhost:8000
 ```
 
-建立公開 GitHub repository `comment-helper`，推送 main，於 Settings → Pages → Build and deployment → Source 選擇 GitHub Actions。CI 成功後才進入部署 job；若第一次推送時尚未啟用 Pages，可在 Actions 手動重新執行工作流程。遠端執行結果以 GitHub Actions 實際紀錄為準。
+`build-site.sh` 下載固定版本的 SheetJS CE 0.20.3 及 JSZip 3.10.1，打包到 `site/vendor`，避免正式網頁執行時從第三方 CDN 載入腳本。建置須能連網。
 
 ```sh
-git init -b main
-git add .
-git commit -m "feat: initial comment helper MVP"
-git remote add origin https://github.com/derliang/comment-helper.git
-git push -u origin main
+# 端到端瀏覽器測試（僅合成學生、真正的 xlsx/docx 檔案）
+pip install playwright==1.51.0 openpyxl==3.1.5
+python -m playwright install --with-deps chromium
+python tests/browser-smoke.py
 ```
 
-## 原始規範
+GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建置 → Chromium 瀏覽器驗收 → Pages artifact → 部署。伺服器程式與測試檔不納入發布套件。版本常數在 `advanced.mjs`；升級時同步更新 HTML、README 與測試。
 
-`original-prompt.md` 保留使用者提供的原始評語生成指令；最新六向度變更不直接覆蓋原文。
+## 版本紀錄
 
-## v0.1.5-alpha 測試
+| 版本 | 更新內容 |
+| --- | --- |
+| v0.2.0-beta | 標題／頁尾／分頁版號、AI 代理及獨立語意核對、教師修訂風格回饋、歷史學號連結、匯入衝突保護、評語鎖定、鍵盤／全班基準評分、完整 Excel、端到端發布閘門、固定版本靜態依賴。 |
+| v0.1.5-alpha | 真實舊版檔案相容性修正、多工作表、跨列 Word、歷史匯入去重、正式匯出前檢查。 |
+| v0.1.4-alpha | MVP 垂直清單、六向度五級色彩、整體星等、規則式生成、自動儲存、基本歷史與風格。 |
 
-四份匿名統計：匯入解析 187 筆學生紀錄、141 則歷史評語、230 + 240 筆舊版五向度分數；62,500 次規則草稿字數測試通過。真實檔案不納入 Git。跨學期僅以已提供學號或姓名座號輔助識別，不可假定兩學期同座號即同人。正式 AI 端點僅傳風格統計，不送歷史評語全文；相似度仍在本機驗證。
+歷史測試紀錄：四份實際檔案共有 187 筆學生紀錄、141 則歷史評語及 470 筆舊版評分；62,500 次規則草稿字數測試。新版持續保留此回歸測試，不把真實資料上傳。
+
+## 尚未承諾的功能
+
+獨立雲端資料庫與帳號、跨裝置同步、真正模型微調、正式外部 AI 服務的商用部署與校方個資合規審核仍需另行決定。語意評估和風格模仿需真實模型驗收；不能把模擬服務測試當作供應商已連線或教育適切性保證。
