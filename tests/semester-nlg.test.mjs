@@ -23,3 +23,28 @@ test('conditional semester advice has a complete consequence and avoids doubled 
  }
  assert.ok(conditional>0,'conditional wording must remain available');
 });
+
+test('semester portraits preserve observed evidence and only fuse supported strengths',()=>{
+ const x=deepGenerate([4,4,4,4,4,3],'熱心協助同學，但經常與同學爭執');
+ assert.equal(x.plan.portrait.basis,'觀察與評分');
+ assert.ok(x.plan.portrait.observedStrengths.some(e=>e.id==='help'));
+ assert.ok(x.plan.portrait.observedGrowth.some(e=>e.id==='peers'));
+ assert.equal(x.quality.portrait.fused,true);
+ assert.deepEqual(x.coverage.missingStrengths,[]);
+ assert.deepEqual(x.coverage.missingGoals,[]);
+ assert.doesNotMatch(x.comment,/調和人我|更臻成熟/);
+ const low=deepGenerate([1,1,1,1,1,1]);
+ assert.equal(low.plan.portrait.limited,true);
+ assert.equal(low.quality.portrait.fused,false);
+ assert.deepEqual(low.quality.portrait.strengthThemes,[]);
+});
+test('rating-only portraits do not infer unobserved personality or incidents',()=>{
+ const x=deepGenerate([4,4,4,4,4,3]);
+ assert.equal(x.plan.portrait.basis,'評分');
+ assert.deepEqual(x.plan.portrait.observedStrengths,[]);
+ assert.doesNotMatch(x.comment,/個性|天資|領導能力|活潑|內向/);
+ const y=deepGenerate([4,4,4,4,4,4],'個性沉穩，熱心協助同學');
+ assert.deepEqual(y.coverage.missingStrengths,[]);
+ assert.match(y.comment,/個性沉靜/);
+ assert.match(y.comment,/樂於協助同學/);
+});
