@@ -1,5 +1,5 @@
 import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='2.5.0';
+export const NLG_VERSION='2.6.0';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -964,16 +964,41 @@ export function semesterCoverage(note,scores,comment,custom=[]){
  if(!p.evidence.complete)return {recognized:0,missingStrengths:[],missingGoals:[],deferred:p.deferred||[]};
  return {recognized:p.observed.length+p.observedGoals.length,missingStrengths:p.observed.filter(e=>!comment.includes(e.phrase)).map(e=>e.phrase),missingGoals:p.observedGoals.filter(e=>![...e.variants,...(e.bridgeVariants||[])].some(v=>comment.includes(v))||e.warningVariants?.length&&!e.warningVariants.some(v=>comment.includes(v))).map(e=>e.phrase),missingWarnings:p.observedGoals.filter(e=>e.warningVariants?.length&&!e.warningVariants.some(v=>comment.includes(v))).map(e=>e.phrase),deferred:p.deferred};
 }
+// Style is a tie-breaker within an evidence-equivalent, quality-bounded pool.
+// Do not force an unsuitable style just because the teacher often uses it.
+function selectSemesterCandidate(ranked,hf,model){
+ const first=ranked.find(x=>riskAgainst(x.c.text,hf)<=.78);
+ if(!first)return {best:null,adaptation:{applied:false,reason:'無合規候選'}};
+ const ref=first.c,counts=model.counts.leadFamily||{},preferred=Object.entries(counts).filter(([k])=>k!=='其他').sort((a,b)=>b[1]-a[1])[0];
+ const reliable=model.samples>=6&&preferred&&preferred[1]/model.samples>=.75;
+ const baseInfo={applied:false,preferred:reliable?preferred[0]:null,baseline:ref.styleFeatures.leadFamily,selected:ref.styleFeatures.leadFamily,reason:reliable?'原候選符合偏好':'樣本不足或偏好未集中'};
+ if(!reliable||ref.styleFeatures.leadFamily===preferred[0])return {best:ref,adaptation:baseInfo};
+ const toneMatches=c=>(c.warnings||[]).filter(w=>c.gg.find(g=>g.id===w.id)?.tone===warningToneOf(w.text)).length;
+ const signature=c=>c.ss.map(e=>e.source==='觀察'?e.id+':'+e.phrase:'').filter(Boolean).sort().join('|')+'→'+c.gg.filter(e=>e.source==='觀察').map(e=>e.id).sort().join('|');
+ const sig=signature(ref),tone=toneMatches(ref);
+ let chosen=null,eligible=0;
+ for(const x of ranked){
+  const c=x.c;
+  if(c.warningCoverage!==ref.warningCoverage||c.goalCoverage!==ref.goalCoverage||c.coverage!==ref.coverage||c.priority!==ref.priority)continue;
+  if(x.score<first.score-6)break;
+  if(c.styleFeatures.leadFamily!==preferred[0]||signature(c)!==sig||toneMatches(c)<tone||c.composition.ratio<ref.composition.ratio-.035||c.wording.penalty>ref.wording.penalty+1||ref.bridge&&!c.bridge||ref.fused&&!c.fused)continue;
+  eligible++;
+  if(riskAgainst(c.text,hf)>.78)continue;
+  chosen=x;break;
+ }
+ if(!chosen)return {best:ref,adaptation:{...baseInfo,reason:'無同等證據與品質的偏好候選',eligible}};
+ return {best:chosen.c,adaptation:{...baseInfo,applied:true,selected:chosen.c.styleFeatures.leadFamily,reason:'同等證據且品質界限內',eligible,scoreCost:first.score-chosen.score}};
+}
 export function deepGenerate(scores,note='',history=[],profile={}){
  const p=semesterPlan(scores,note,profile);
  if(!p.evidence.complete)return {comment:'',source:'incomplete',characters:0,plan:p,chosenStrengths:[],chosenGoals:[],issues:['評分未完成'],coverage:{recognized:0,missingStrengths:[],missingGoals:[],deferred:p.deferred},quality:{}};
  const div=semesterHistoryDiversity(history),hf=history.map(similarityFeatures),localStyle=semesterStyleModel(profile);
  const ranked=termCandidates(p,profile).map(c=>({c,score:termScore(c,profile,div,localStyle)})).sort((a,b)=>b.c.warningCoverage-a.c.warningCoverage||b.c.goalCoverage-a.c.goalCoverage||b.c.coverage-a.c.coverage||b.c.priority-a.c.priority||b.score-a.score);
- const best=ranked.find(x=>riskAgainst(x.c.text,hf)<=.78)?.c,comment=best?.text||'';
+ const selection=selectSemesterCandidate(ranked,hf,localStyle),best=selection.best,comment=best?.text||'';
  const coverage=semesterCoverage(note,scores,comment,profile.semanticRules||[]);
  const chosenStrengths=(best?.ss||[]).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
  const chosenGoals=(best?.gg||[]).map((e,i)=>({phrase:best.surfaces[i],canonical:e.phrase,concept:e.label,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
- return {comment,source:best?'deep':'unavailable',characters:length(comment),plan:p,chosenStrengths,chosenGoals,coverage:{...coverage,unknown:p.evidence.unknown.length},issues:best?validate(comment,history):['暫無符合學期評量及字數去重規範的候選評語'],quality:{level:'學期總結性評量',evidence:best?{strengths:best.ss.map(e=>({source:e.source,dimension:e.dim,grade:e.grade??null,concept:e.id,canonical:e.phrase})),blockedGradeDimensions:p.blockedGradeDimensions||[],unresolved:p.evidence.unknown.length}:null,form:best?.form||'',syntax:best?.syntax||'',balance:best?.composition||null,wording:best?.wording||null,style:best?{samples:localStyle.samples,confidence:localStyle.confidence,fit:semesterStyleFeatureFit(best.styleFeatures,localStyle),features:best.styleFeatures}:null,tone:best?best.gg.map(g=>({concept:g.label,target:g.tone,realized:best.warnings?.find(w=>w.id===g.id)?warningToneOf(best.warnings.find(w=>w.id===g.id).text):g.tone})):[],action:'',connective:connectiveFamily(comment),learnedSamples:profile.discourse?.samples||0,openingLength:best?.headLen||0,portrait:best?{fused:best.fused,strengthThemes:unique(best.ss.filter(e=>e.source!=='中性').map(portraitTheme)),growthThemes:unique(best.gg.map(portraitTheme))}:null,discourse:best?{relation:best.relation,bridged:best.bridge,crossClauseOverlap:consequenceOverlap(best.surfaces,best.tail)}:null,warning:best?{explicit:best.warnings||[],missing:coverage.missingWarnings||[]}:null,semantic:best?{...best.semantic,historyPenalty:semanticDiversityPenalty(best.semantic,div)}:null}};
+ return {comment,source:best?'deep':'unavailable',characters:length(comment),plan:p,chosenStrengths,chosenGoals,coverage:{...coverage,unknown:p.evidence.unknown.length},issues:best?validate(comment,history):['暫無符合學期評量及字數去重規範的候選評語'],quality:{level:'學期總結性評量',evidence:best?{strengths:best.ss.map(e=>({source:e.source,dimension:e.dim,grade:e.grade??null,concept:e.id,canonical:e.phrase})),blockedGradeDimensions:p.blockedGradeDimensions||[],unresolved:p.evidence.unknown.length}:null,form:best?.form||'',syntax:best?.syntax||'',balance:best?.composition||null,wording:best?.wording||null,style:best?{samples:localStyle.samples,confidence:localStyle.confidence,fit:semesterStyleFeatureFit(best.styleFeatures,localStyle),features:best.styleFeatures,adaptation:selection.adaptation}:null,tone:best?best.gg.map(g=>({concept:g.label,target:g.tone,realized:best.warnings?.find(w=>w.id===g.id)?warningToneOf(best.warnings.find(w=>w.id===g.id).text):g.tone})):[],action:'',connective:connectiveFamily(comment),learnedSamples:profile.discourse?.samples||0,openingLength:best?.headLen||0,portrait:best?{fused:best.fused,strengthThemes:unique(best.ss.filter(e=>e.source!=='中性').map(portraitTheme)),growthThemes:unique(best.gg.map(portraitTheme))}:null,discourse:best?{relation:best.relation,bridged:best.bridge,crossClauseOverlap:consequenceOverlap(best.surfaces,best.tail)}:null,warning:best?{explicit:best.warnings||[],missing:coverage.missingWarnings||[]}:null,semantic:best?{...best.semantic,historyPenalty:semanticDiversityPenalty(best.semantic,div)}:null}};
 }
 export const deepDraft=(scores,note='',history=[],profile={})=>deepGenerate(scores,note,history,profile).comment;
 export function deepAlternatives(scores,note='',history=[],profile={},current='',limit=3){
