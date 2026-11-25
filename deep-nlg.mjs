@@ -1,5 +1,5 @@
 import {dims,complete,length,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='1.0.2';
+export const NLG_VERSION='1.1.0';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -67,6 +67,48 @@ export function planComment(scores,note='',profile={}){
  const goals=observedGoals.length?observedGoals:rank.filter(x=>x.v===low).map(({v,dim})=>({id:'grade-goal-'+dim,kind:'goal',phrase:mode==='延續優勢'?maintenanceGoals[dim]:gradeGuidance[dim][v-1],dim,source:'等第',grade:v}));
  return {evidence,focus:mode,strengths,goals,observed,observedGoals,low,blockedGradeDimensions:[...blocked]};
 }
+// A practical action is a recommendation, never a claim about the student.
+// Match the approved goal, not arbitrary words in the teacher's note.
+const actionRules=[
+ ['punctual',/守時|時間觀念|時間管理|妥善規劃時間|掌握時間/,['預留準備與移動的時間','事先安排每日的作息','留意各項活動的開始時間','提早做好出門與上課的準備']],
+ ['clean',/整潔工作|責任區清潔|打掃|清潔用具|個人區域|整理桌面|垃圾分類|餐後收拾/,['記住分內的清潔工作','完成後再檢查負責的區域','每天留一些時間整理周遭環境','把整理與清潔列入每日應辦事項']],
+ ['return',/報備|請假程序/,['離開前先向師長說明去向','有臨時狀況時先向師長說明','事先確認離開時應辦的程序']],
+ ['queue',/依序排隊|集合與行進|迅速集合|鐘響即回座|用餐時的秩序/,['留意團體活動的時間與順序','聽到集合或上課提醒便做好準備','在團體活動中留意彼此的空間']],
+ ['peers',/平和方式與同學溝通|平和有禮的互動|人際應對|溫和語氣|冷靜表達|聽完再表達|感受與界線|表達歉意|主動問候/,['先聽對方說完再表達自己的想法','遇到意見不同時先冷靜聆聽','說話時多留意對方的感受','遇到分歧時耐心說明自己的想法']],
+ ['service',/班級事務|完成交辦事項|承擔分配|活動分工|交接與回報|服務精神|服務工作/,['記下自己負責的工作與時間','有分工時先確認自己的責任','完成工作後主動回報進度','從分內的小事做起']],
+ ['honesty',/言行一致|誠信|據實說明|面對自身疏失/,['遇到問題時如實說明經過','對自己的言行多一分留意','有疏失時願意說明並承擔']],
+ ['promise',/履行約定|歸還借用物品|按時歸還/,['記下與他人約定的時間','事先確認需要履行的事項','在約定時間前做好準備']],
+ ['focus',/專注|學習步調|專心/,['上課時將注意力放在當下的學習','把容易分心的物品先收好','每次先專心完成一項學習任務']],
+ ['homework',/完成作業|規律複習|學習方法/,['將應完成的事項分段安排','預留每天整理與複習的時間','先確認應完成的作業及期限']],
+ ['confidence',/自信|勇於表達|提出問題與求助/,['先從熟悉的問題練習表達','有疑問時試著向師長或同學請教','從小組討論開始練習說出想法']],
+ ['reflection',/聽取建議|調整做法/,['聽完建議後試著調整一項做法','遇到困難時想想還有哪些做法','從每次經驗中找出可以調整的地方']],
+ ['phone',/手機/,['事先確認可以使用手機的時機','需要專心時先將手機妥善收好','依照團體約定安排手機使用時間']],
+ ['uniform',/服儀/,['出門前先檢查服裝是否合宜','事先備妥符合規定的服裝','每天留意學校的服儀要求']],
+ ['initiative',/主動完成例行工作|事項的先後順序|自我檢查|自我管理|團體生活規範/,['每天先確認應辦的事項','完成一項工作後再確認是否有遺漏','把應辦的事情依序安排','從自己能掌握的例行工作開始']],
+ ['noise',/上課時的言談與秩序/,['上課時留意自己的音量與發言時機','想與同學交談時先等到適當時機']],
+ ['public',/愛護公物/,['使用公共物品後妥善收好','使用公物時多留意保管與歸位']]
+];
+const gradeActions=[
+ ['先確認每日應遵守的生活常規','從每天的作息與準備做起'],
+ ['每天留一些時間整理自己的座位','完成清潔後再檢查周遭環境'],
+ ['與人交談時多留意對方的感受','先聽完他人的想法再回應'],
+ ['先確認自己分內的工作','將交辦事項依序完成'],
+ ['留意自己答應他人的事項','遇到疏失時如實說明'],
+ ['每天先確認應辦的事項','完成工作後再檢查有無遺漏']
+];
+export function actionFor(goal,focus){
+ if(focus==='延續優勢')return [];
+ const matched=actionRules.find(([,re])=>re.test(goal.phrase));
+ return matched?matched[2]:goal.source==='等第'&&goal.dim>=0?gradeActions[goal.dim]:[];
+}
+// Learn only grammatical construction preferences from actual edits; do not
+// reuse text fragments as facts. Sparse feedback is shrunk toward neutral.
+export function learnDiscourse(feedback=[]){
+ const rows=feedback.filter(e=>typeof e?.raw==='string'&&typeof e?.final==='string'&&e.raw!==e.final&&!validate(e.final,[]).length);
+ const signals={semicolon:s=>s.includes('；'),twoSentences:s=>(s.match(/。/g)||[]).length>1,conditional:s=>/若能/.test(s),directWish:s=>/希望|期許|期待|盼能/.test(s),action:s=>/事先|先確認|先聽|預留|記下|完成後|每天|出門前/.test(s)};
+ const weights={};for(const [key,fn] of Object.entries(signals))weights[key]=rows.reduce((n,r)=>n+Number(fn(r.final))-Number(fn(r.raw)),0)/(rows.length+4);
+ return {samples:rows.length,weights};
+}
 const starts=/^(?:若能|期待能|希望能|期許能|建議|也盼|盼能)/;
 const leadList=profile=>unique([...(profile.preferred||[]).map(w=>({'若能':'若能','希望':'希望能','期許':'期許能','期待':'期待能'})[w]).filter(Boolean),'若能','期待能','希望能','期許能','盼能','也盼']);
 function outcomes(goal,focus){
@@ -99,14 +141,27 @@ function realize(plan,profile){
  for(let i=0;i<Math.min(observedGoals.length,5);i++)for(let j=i+1;j<Math.min(observedGoals.length,5);j++){
   if(observedGoals[i].id!==observedGoals[j].id&&similarity(observedGoals[i].phrase,observedGoals[j].phrase)<.6)goalGroups.unshift([observedGoals[i],observedGoals[j]]);
  }
- const add=(text,ss,gg,form)=>{
+ const add=(text,ss,gg,form,action='')=>{
   const n=length(text);if(n<42||n>50||out.has(text))return;
   if(validate(text,[]).length||starts.test(text))return;
-  out.set(text,{text,ss,gg,form,n});
+  out.set(text,{text,ss,gg,form,n,action});
  };
  for(const a of first)for(const gg of goalGroups){
   const g=gg.map(x=>x.phrase).join('並'),ends=gg.length>1&&gg[0].dim!==gg[1].dim?['讓日常生活更有條理','讓這些好習慣逐步落實在生活中','從每日生活中的小事逐步做起']:outcomes(gg[0],focus);
   for(const l of leads){
+   // Concrete means-to-goal relations. The conditional form has a consequence,
+   // direct wishes have parallel verb phrases, not a stranded conditional.
+   if(gg.length===1){
+    for(const action of actionFor(gg[0],focus)){
+     const tail=l==='若能'?l+action+'，將有助於'+g:l+action+'，'+g;
+     const tails=[tail,...(l==='若能'?[]:[l+g+'，'+action])];
+     for(const t of tails){
+      add(a.phrase+'；'+t+'。',[a],gg,'肯定－具體行動－期許',action);
+      add(a.phrase+'。'+t+'。',[a],gg,'雙句具體行動',action);
+      for(const b of second){if(distinct(a,b))add(a.phrase+'，'+b.phrase+'；'+t+'。',[a,b],gg,'雙肯定－具體行動',action);}
+     }
+    }
+   }
    for(const end of ends){
     add(a.phrase+'，'+l+g+'，'+end+'。',[a],gg,'肯定－期許－結果');
     add(a.phrase+'。'+l+g+'，'+end+'。',[a],gg,'雙句銜接');
@@ -131,19 +186,24 @@ function rankCandidate(c,plan,profile,div){
  const covered=[...plan.observed,...plan.observedGoals].filter(e=>[...c.ss,...c.gg].some(x=>x.kind===e.kind&&x.phrase===e.phrase));
  const coverage=covered.length,priority=covered.reduce((n,e)=>n+evidenceWeight(e),0);
  const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join('');
- const diversity=-(div.openings.get(parts[0])||0)*2-(div.endings.get(parts.at(-1))||0)*1.5-(div.shapes.get(shape)||0)*.12;
+ const diversity=-Math.min(5,(div.openings.get(parts[0])||0)*.65)-Math.min(4,(div.endings.get(parts.at(-1))||0)*.55)-Math.min(2,(div.shapes.get(shape)||0)*.07);
  const natural=3-(repeatedWord(c.text)?2:0)-(parts.some(p=>length(p)>27)?1:0)+(c.form.includes('雙句')||c.form.includes('分號') ? .2 : 0)-(plan.focus==='延續優勢'&&/若能/.test(c.text)?1.1:0)-(c.gg.length>1&&/習慣並.{0,10}習慣/.test(c.text)?1:0);
  const strength=c.ss.reduce((n,x)=>n+(x.source==='觀察'?4:x.source==='等第'?x.grade-2:0),0);
  const goalImportance=c.gg.reduce((n,x)=>n+(x.source==='觀察'?evidenceWeight(x)/100:6-(x.grade||4)),0);
  const style=profile.model?.total||profile.structure||profile.preferred?.length?styleFit(c.text,profile):0;
- const score=natural*3+strength+goalImportance+diversity+style*2-Math.abs(c.n-46)*.3;
+ const w=profile.discourse?.weights||{};const learned=(w.semicolon||0)*Number(c.text.includes('；'))+(w.twoSentences||0)*Number((c.text.match(/。/g)||[]).length>1)+(w.conditional||0)*Number(c.text.includes('若能'))+(w.directWish||0)*Number(/希望|期許|期待|盼能/.test(c.text))+(w.action||0)*Number(Boolean(c.action));
+ const generic=genericOutcome.some(x=>c.text.includes(x))?2.5:0;
+ const stranded=/若能[^。；]+，從[^。；]+(?:著手|做起|練習)。$/.test(c.text)?4:0;
+ const actionBonus=c.action?7:0;
+ const maintenancePenalty=plan.focus==='延續優勢'&&c.ss.some(s=>c.gg.some(g=>s.dim>=0&&s.dim===g.dim))?1.5:0;
+ const score=natural*3+strength+goalImportance+diversity+style*2+learned*2+actionBonus-generic-stranded-maintenancePenalty-Math.abs(c.n-46)*.25;
  return {...c,coverage,priority,natural,diversity,style,score};
 }
 function explain(text,plan,source,ranked,history,profile){
  const chosenStrengths=(ranked?ranked.ss:plan.strengths.filter(e=>text.includes(e.phrase))).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
  const chosenGoals=(ranked?ranked.gg:plan.goals.filter(e=>text.includes(e.phrase))).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
  const missingStrengths=plan.observed.filter(e=>!chosenStrengths.some(x=>x.phrase===e.phrase)).map(e=>e.phrase),missingGoals=plan.observedGoals.filter(e=>!chosenGoals.some(x=>x.phrase===e.phrase)).map(e=>e.phrase);
- return {comment:text,source,characters:length(text),plan,chosenStrengths,chosenGoals,coverage:{recognized:plan.observed.length+plan.observedGoals.length,missingStrengths,missingGoals,unknown:plan.evidence.unknown.length},issues:validate(text,history),quality:{form:ranked?.form||'相容生成',natural:ranked?.natural??null,diversity:ranked?.diversity??null,style:ranked?.style??null}};
+ return {comment:text,source,characters:length(text),plan,chosenStrengths,chosenGoals,coverage:{recognized:plan.observed.length+plan.observedGoals.length,missingStrengths,missingGoals,unknown:plan.evidence.unknown.length},issues:validate(text,history),quality:{form:ranked?.form||'相容生成',natural:ranked?.natural??null,diversity:ranked?.diversity??null,style:ranked?.style??null,action:ranked?.action||'',learnedSamples:profile.discourse?.samples||0}};
 }
 // 8. Teacher-style adaptation is driven by existing approved profile and feedback.
 // Compatibility engine is retained for exceptional coverage or a saturated history.
