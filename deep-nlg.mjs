@@ -1,5 +1,5 @@
 import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='1.1.2';
+export const NLG_VERSION='2.0.0';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -207,7 +207,7 @@ function realize(plan,profile){
 // identity or complete teacher profile. History ranking is always recomputed.
 const poolCache=new Map();
 const slot=e=>({id:e.id,kind:e.kind,phrase:e.phrase,dim:e.dim,source:e.source,grade:e.grade,frequency:e.frequency,time:e.time,priority:e.priority});
-export function clearCandidateCache(){poolCache.clear();}
+export function clearCandidateCache(){poolCache.clear();termCache.clear();}
 function candidatePool(plan,profile){
  const slim={focus:plan.focus,strengths:plan.strengths.map(slot),goals:plan.goals.map(slot),observed:plan.observed.map(slot),observedGoals:plan.observedGoals.map(slot)};
  const key=JSON.stringify([slim,leadList(profile)]);
@@ -246,7 +246,8 @@ function explain(text,plan,source,ranked,history,profile){
 }
 // 8. Teacher-style adaptation is driven by existing approved profile and feedback.
 // Compatibility engine is retained for exceptional coverage or a saturated history.
-export function deepGenerate(scores,note='',history=[],profile={}){
+// Previous incident/action-based engine retained for compatibility regression only.
+export function eventGenerate(scores,note='',history=[],profile={}){
  const plan=planComment(scores,note,profile);
  if(!plan.evidence.complete)return {comment:'',source:'incomplete',characters:0,plan,chosenStrengths:[],chosenGoals:[],issues:['評分未完成'],coverage:{recognized:0,missingStrengths:[],missingGoals:[],unknown:0},quality:{}};
  const div=diversityIndex(history),historyFeatures=history.map(similarityFeatures);
@@ -268,8 +269,163 @@ export function deepGenerate(scores,note='',history=[],profile={}){
  // Never hand an invalid candidate to the application as a formal comment.
  return {...explain('',plan,'unavailable',null,history,profile),issues:['暫無符合字數及去重規範的候選評語']};
 }
+export const eventDraft=(scores,note='',history=[],profile={})=>eventGenerate(scores,note,history,profile).comment;
+export function eventAlternatives(scores,note='',history=[],profile={},current='',limit=3){
+ const out=[],excluded=[...history,...(current?[current]:[])];
+ for(let i=0;i<Math.min(6,limit);i++){const c=eventDraft(scores,note,[...excluded,...out],profile);if(!c||validate(c,[...excluded,...out]).length)break;out.push(c);}return out;
+}
+
+
+// NLG 2.0: term-level developmental evaluation. Rule IDs remain evidence;
+// the realization vocabulary expresses a semester-level development concept.
+const termGroups=[
+ ['materials dailyPreparation','生活準備','增進生活準備與自我管理的能力','在生活安排上更有計畫與自我要求','使日常生活的準備更有條理'],
+ ['attendance requestPermission rules uniform phone classNoise','生活自律與規範','在生活自律與團體規範的實踐上更加成熟','更重視生活規範與自我管理的責任','增進自我管理與遵守團體規範的自覺'],
+ ['punctual','時間管理','在時間安排與守時習慣上更有自我要求','增進時間管理能力並培養穩定的守時習慣','使時間安排與守時表現更加穩定','更能掌握時間，養成良好的守時習慣'],
+ ['queue mealRoutine assemblyOrder returnSeat','團體秩序','在團體生活中更能自我要求並維持秩序','增進團體生活的秩序觀念與自律能力','使團體規範的實踐更加穩定'],
+ ['assemblySpeed','團體配合','增進時間觀念與團體活動的配合度','在團體生活的時間安排上更加主動'],
+ ['sharedSpace','公共責任','在公共環境與公物的維護上更具責任感','增進愛護公物與維護公共環境的自覺'],
+ ['clean deskOrganization waste mealCleanup cleanTools cleanFinish','整潔與責任','在整潔習慣與環境維護上更加主動','增進主動整理與維護環境的習慣','培養更穩定的整潔習慣與責任感','使環境維護與整潔工作更加確實'],
+ ['courtesy greeting speechTone apology','人際修養','在人際應對與待人接物上更加成熟','增進人際應對的合宜性與待人修養','在待人態度與日常應對上更有自我要求'],
+ ['peers interrupt listening emotion respectBoundary','人我調和','在人我互動中多一分包容與尊重','在人際溝通與團體相處上更加成熟','增進人我調和與相互尊重的能力','在與同學相處時更能兼顧彼此的感受'],
+ ['service division taskFollowthrough classEvents handover','服務與責任','在班級事務的參與及責任承擔上更加主動','增進服務的主動性與完成分內工作的責任感','使班級事務的參與與執行更加穩定'],
+ ['honesty accountability reportFacts','誠信與承擔','在言行一致與責任承擔上更有自我要求','更加重視誠信與對自身言行的責任','增進言行一致與誠實面對責任的能力'],
+ ['promise borrowing','承諾與信任','在履行承諾與待人誠信上更加成熟','更加重視對他人的承諾與責任','培養更穩定的守信習慣與責任感'],
+ ['assessmentIntegrity','評量誠信','在學習與評量中更能實踐誠信原則','增進對學習規範與誠信的自我要求'],
+ ['reminders initiative','主動與責任','在日常事務與責任承擔上更加主動','增進處事的主動性與自我管理能力','培養主動負責的態度與穩定的生活習慣'],
+ ['priorities selfCheck planning','處事與規劃','在時間規劃與處事條理上更加成熟','增進生活規劃與自我檢核的能力','使處事更有條理，日常表現更加穩定'],
+ ['focus','學習專注','在學習專注與自我管理上更有自我要求','增進學習專注的穩定度與持續性','使學習過程更為專注而穩定'],
+ ['work study','學習習慣','在學習安排與規律複習上更有自我要求','培養穩定而有條理的學習習慣','增進學習規劃與自我管理的能力'],
+ ['confidence discussion askHelp','表達與學習','在表達想法與學習參與上更加主動','增進表達與主動請益的能力','在團體互動與學習中更勇於表達想法'],
+ ['teamwork','合作與調和','增進與人合作及協調的能力','在團體合作中更能調和彼此的想法'],
+ ['persistence','持續學習','在面對學習挑戰時更能持續探索與嘗試','培養穩定而持續的學習態度'],
+ ['reflect','反思與成長','在自我反思與接受建議上更加成熟','增進反思與調整自身做法的能力']
+];
+const termById=new Map(termGroups.flatMap(([ids,label,...variants])=>ids.split(' ').map(id=>[id,{label,variants}])));
+const termGrade=[
+ ['逐步建立有秩序的生活習慣','在生活常規上增進自我要求','使日常生活安排更加有條理'],
+ ['逐步建立整理與維護環境的習慣','增進整潔工作的確實度與主動性','培養更穩定的整潔習慣與責任感'],
+ ['逐步培養合宜的人際應對與待人態度','在人際應對與待人接物上更加成熟','增進人我調和與相互尊重的能力'],
+ ['逐步建立參與班級事務的責任感','在班級事務與責任承擔上更加主動','增進班級服務的主動性與責任感'],
+ ['逐步建立重視誠信與責任的態度','在言行一致與責任承擔上更有自我要求','使言行與承諾更加一致'],
+ ['逐步建立生活自律與自我管理的習慣','在自我管理與團體規範上更加成熟','增進自律與團體規範的實踐']
+];
+const termNeutral=['日常生活的各項習慣仍在養成中','生活常規與自我管理仍有發展空間','目前各項日常表現仍有成長空間','日常生活的基本表現仍可逐步累積'];
+const termEnd=[
+ ['使日常表現更加穩定','讓生活步調更有條理','使生活態度更臻成熟'],
+ ['使生活習慣更為成熟','讓周遭環境更加舒適','使整潔與責任的表現更為穩定'],
+ ['使人我關係更為調和','與同學的相處將更為融洽','使團體互動更加和諧'],
+ ['在團體中發揮更多力量','使班級服務表現更臻成熟','為團體生活增添助益'],
+ ['讓彼此的信任更加穩固','使待人處事更值得信賴','使言行表現更臻成熟'],
+ ['使整體表現更臻成熟','讓個人與團體生活更為調和','使日常表現更加穩健']
+];
+const eventWording=/(?:有臨時狀況時|先向師長說明|先聽對方說完|再表達自己的想法|記下與他人約定的時間|提早做好出門|完成後再檢查|每天留一些時間|把整理與清潔列入|上課時能將注意力|遇見師長或同學時|打聲招呼|先確認應辦|出門前先|養成事先報備的習慣|養成鐘響即回座的習慣|養成依序排隊的習慣|養成按約歸還借用物品的習慣|練習聽完再表達想法|將有助於)/;
+const harshWording=/(?:欠缺|缺乏|散漫|不守規矩|不自律|不合群|懶惰|不誠實|說謊|作弊|擅自離開|插隊|忘記打掃|經常遲到|拒絕分工|推卸責任)/;
+const isolated=/(?:今天|今日|昨天|昨日|當天|當時|那天|某次|有一次|曾有一次|單次|一次事件|這次|那次|某天|上週某天|上次)/;
+const recurrent=/(?:經常|常常|屢次|反覆|多次|每次|總是|向來|一向|平時|長期|本學期|持續|時常|頻繁)/;
+function termNotes(note){
+ const retained=[],deferred=[];
+ for(const c of clauses(note)){
+  if(isolated.test(c)&&!recurrent.test(c)){deferred.push(c);continue;}
+  retained.push(c);
+ }
+ return {note:retained.join('，'),deferred};
+}
+function termGoal(e,focus){
+ if(e.source==='等第'){
+  const vs=focus==='延續優勢'?[e.phrase,...(e.dim===3?['延續對班級事務的用心','持續在團體中發揮服務精神']:e.dim===5?['持續展現自律與自我要求','延續成熟的生活態度']:['持續保持這份良好的表現','延續這份用心與自我要求'])]:unique([e.phrase,termGrade[e.dim][Math.max(0,Math.min(2,e.grade-1))],...termGrade[e.dim].slice(1)]);
+  return {...e,label:dims[e.dim],variants:unique(vs)};
+ }
+ const m=termById.get(e.id);
+ return {...e,label:m?.label||dims[e.dim]||'個別發展',variants:m?.variants||[e.phrase]};
+}
+export function semesterPlan(scores,note='',profile={}){
+ const n=termNotes(note),p=planComment(scores,n.note,profile);
+ if(!p.evidence.complete)return {...p,deferred:n.deferred};
+ const conflicts=new Set(p.observedGoals.map(e=>e.id));
+ const before=p.observed.length;
+ p.observed=p.observed.filter(e=>!conflicts.has(e.id));
+ if(before!==p.observed.length)p.evidence.conflicts.push('同一主題正反觀察並存，保留成長方向並避免矛盾肯定。');
+ p.evidence.strengths=p.observed;
+ p.strengths=p.strengths.filter(e=>e.source!=='觀察'||p.observed.includes(e));
+ if(!p.strengths.length||p.strengths.every(e=>e.source==='中性'))p.strengths=termNeutral.map(phrase=>({id:'neutral',kind:'strength',phrase,dim:-1,source:'中性'}));
+ p.goals=p.goals.map(e=>termGoal(e,p.focus));p.observedGoals=p.goals.filter(e=>e.source==='觀察');p.evidence.goals=p.observedGoals;p.deferred=n.deferred;
+ return p;
+}
+function termOutcomes(g,focus){
+ if(focus==='延續優勢')return ['在團體生活中持續發揮所長','使良好的表現持續展現','讓各項優勢更加穩固'];
+ if(g.dim>=0)return termEnd[g.dim];
+ if(/學習/.test(g.label))return ['使學習表現更加穩定','讓學習與個人成長更具發展性'];
+ return ['使整體表現更臻成熟','使個人的發展更加穩定'];
+}
+const termLeads=p=>unique([...(p.count&&p.features?.usesDirectAddress/p.count>=.6?['期許妳能','希望妳能','期待妳能']:[]),'若能','期許能','希望能','期待能','盼能','期盼能']);
+function termPool(p,profile){
+ const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,12);
+ const groups=p.goals.map(g=>[g]);
+ for(let i=0;i<Math.min(p.goals.length,6);i++)for(let j=i+1;j<Math.min(p.goals.length,6);j++){
+  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&a.dim!==b.dim)groups.push([a,b]);
+ }
+ const heads=[];
+ for(const a of first){
+  heads.push({ss:[a],text:a.phrase});
+  for(const b of second)if(distinct(a,b))heads.push({ss:[a,b],text:a.phrase+'，'+b.phrase});
+ }
+ const add=(head,gg,surfaces,lead,tail,sep)=>{
+  const goal=surfaces.join('，並'),text=head.text+sep+lead+goal+(tail?'，'+tail:'')+'。',n=length(text);
+  if(n<42||n>50||out.has(text)||eventWording.test(text)||harshWording.test(text)||validate(text,[]).length)return;
+  out.set(text,{text,ss:head.ss,gg,surfaces,form:sep==='。'?'雙句學期期許':'分號學期期許',n,headLen:length(head.text),tail});
+ };
+ for(const head of heads)for(const gg of groups){
+  const a=gg[0],vs=gg.length===1?a.variants.map(v=>[v]):a.variants.slice(0,2).flatMap(x=>gg[1].variants.slice(0,2).map(y=>[x,y]));
+  for(const surfaces of vs){
+   // Count the invariant string once before enumerating connectors.
+   const base=length(head.text+surfaces.join('，並'))+2;
+   for(const l of leads){
+    const size=base+length(l);
+    if(size>=42&&size<=50)for(const sep of ['；','。'])add(head,gg,surfaces,l,'',sep);
+    if(gg.length===1&&size<50)for(const tail of termOutcomes(a,p.focus)){
+     if(size+1+length(tail)>=42&&size+1+length(tail)<=50)add(head,gg,surfaces,l,tail,'；');
+    }
+   }
+  }
+ }
+ return [...out.values()];
+}
+const termCache=new Map();
+function termCandidates(p,profile){
+ const small={focus:p.focus,low:p.low,strengths:p.strengths.map(slot),observed:p.observed.map(slot),goals:p.goals.map(e=>({...slot(e),label:e.label,variants:e.variants})),observedGoals:p.observedGoals.map(slot)};
+ const key=JSON.stringify([small,termLeads(profile)]);
+ if(termCache.has(key)){const a=termCache.get(key);termCache.delete(key);termCache.set(key,a);return a;}
+ const a=termPool(small,profile);if(a.length<=12000&&key.length<=16000){termCache.set(key,a);while(termCache.size>8)termCache.delete(termCache.keys().next().value);}return a;
+}
+function termRank(c,p,profile,div){
+ const selected=[...c.ss,...c.gg],covered=[...p.observed,...p.observedGoals].filter(e=>selected.some(x=>x.kind===e.kind&&x.id===e.id&&x.phrase===e.phrase));
+ const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
+ const diversity=-(div.openings.get(parts[0])||0)*.8-(div.endings.get(parts.at(-1))||0)*.6-(div.connectives.get(connectiveFamily(c.text))||0)*.15-(div.shapes.get(shape)||0)*.05;
+ const style=profile.model?.total||profile.structure||profile.preferred?.length?styleFit(c.text,profile):0;
+ const grade=c.ss.filter(e=>e.source==='等第').reduce((n,e)=>n+e.grade-2,0);
+ const balance=c.ss.every(x=>x.source==='中性')?0:-Math.abs(c.headLen-23)*.3;
+ const mismatch=p.focus==='延續優勢'&&c.ss.some(e=>c.gg.some(g=>g.dim===e.dim))?1:0;
+ const w=profile.discourse?.weights||{},learn=(w.semicolon||0)*Number(c.text.includes('；'))+(w.twoSentences||0)*Number(c.text.includes('。',c.headLen))+(w.conditional||0)*Number(c.text.includes('若能'))+(w.directWish||0)*Number(/希望|期許|期待|盼能/.test(c.text));
+ return {...c,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),score:grade+balance+diversity+style*2+learn-dup*1.4-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)};
+}
+export function semesterCoverage(note,scores,comment,custom=[]){
+ const p=semesterPlan(scores,note,{semanticRules:custom});
+ if(!p.evidence.complete)return {recognized:0,missingStrengths:[],missingGoals:[],deferred:p.deferred||[]};
+ return {recognized:p.observed.length+p.observedGoals.length,missingStrengths:p.observed.filter(e=>!comment.includes(e.phrase)).map(e=>e.phrase),missingGoals:p.observedGoals.filter(e=>!e.variants.some(v=>comment.includes(v))).map(e=>e.phrase),deferred:p.deferred};
+}
+export function deepGenerate(scores,note='',history=[],profile={}){
+ const p=semesterPlan(scores,note,profile);
+ if(!p.evidence.complete)return {comment:'',source:'incomplete',characters:0,plan:p,chosenStrengths:[],chosenGoals:[],issues:['評分未完成'],coverage:{recognized:0,missingStrengths:[],missingGoals:[],deferred:p.deferred},quality:{}};
+ const div=diversityIndex(history),hf=history.map(similarityFeatures);
+ const ranked=termCandidates(p,profile).map(c=>termRank(c,p,profile,div)).sort((a,b)=>b.coverage-a.coverage||b.priority-a.priority||b.score-a.score);
+ const best=ranked.find(c=>riskAgainst(c.text,hf)<=.78),comment=best?.text||'';
+ const coverage=semesterCoverage(note,scores,comment,profile.semanticRules||[]);
+ const chosenStrengths=(best?.ss||[]).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
+ const chosenGoals=(best?.gg||[]).map((e,i)=>({phrase:best.surfaces[i],canonical:e.phrase,concept:e.label,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
+ return {comment,source:best?'deep':'unavailable',characters:length(comment),plan:p,chosenStrengths,chosenGoals,coverage:{...coverage,unknown:p.evidence.unknown.length},issues:best?validate(comment,history):['暫無符合學期評量及字數去重規範的候選評語'],quality:{level:'學期總結性評量',form:best?.form||'',action:'',connective:connectiveFamily(comment),learnedSamples:profile.discourse?.samples||0,openingLength:best?.headLen||0}};
+}
 export const deepDraft=(scores,note='',history=[],profile={})=>deepGenerate(scores,note,history,profile).comment;
 export function deepAlternatives(scores,note='',history=[],profile={},current='',limit=3){
- const out=[],excluded=[...history,...(current?[current]:[])];
- for(let i=0;i<Math.min(6,limit);i++){const c=deepDraft(scores,note,[...excluded,...out],profile);if(!c||validate(c,[...excluded,...out]).length)break;out.push(c);}return out;
+ const out=[],excluded=[...history,...(current?[current]:[])];for(let i=0;i<Math.min(6,limit);i++){const c=deepDraft(scores,note,[...excluded,...out],profile);if(!c||validate(c,[...excluded,...out]).length)break;out.push(c);}return out;
 }
