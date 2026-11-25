@@ -14,7 +14,7 @@ export function stampAssets(files){
 }
 function main(){
  const root=resolve(fileURLToPath(new URL('..',import.meta.url)),'site');
- const paths=['index.html','style.css','app.mjs','engine.mjs','advanced.mjs','importers.mjs','handoff.mjs','roundtrip.mjs','vendor/xlsx.full.min.js','vendor/jszip.min.js'];
+ const paths=['index.html','style.css','app.mjs','engine.mjs','deep-nlg.mjs','advanced.mjs','importers.mjs','handoff.mjs','roundtrip.mjs','vendor/xlsx.full.min.js','vendor/jszip.min.js'];
  const files=Object.fromEntries(paths.map(p=>[p,readFileSync(resolve(root,p),'utf8')]));
  const result=stampAssets(files);
  for(const p of paths)if(result.files[p]!==files[p])writeFileSync(resolve(root,p),result.files[p]);
