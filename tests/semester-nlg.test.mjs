@@ -141,3 +141,11 @@ test('tone and syntax resources retain explicit shortcomings and grade-appropria
  assert.equal(recurrent.observedGoals[0].tone,'明確警醒');assert.equal(occasional.observedGoals[0].tone,'精進引導');
  const h=[],forms=new Set();for(let i=0;i<12;i++){const x=deepGenerate(s,'熱心協助同學，但經常與同學爭執',h);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.equal(x.quality.warning.explicit.length,1);forms.add(x.quality.syntax);h.push(x.comment);}assert.ok(forms.size>=2);
 });
+
+
+test('balanced composition respects evidence and all explicitly recorded weaknesses',()=>{
+ const h=[];let ratio=0;for(let i=0;i<12;i++){const x=deepGenerate(s,'熱心協助同學，但經常與同學爭執',h);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.ok(x.quality.balance.concern>0);ratio+=x.quality.balance.ratio;h.push(x.comment);}assert.ok(ratio/12>=.36);
+ const low=deepGenerate([1,1,1,1,1,1]);assert.equal(low.quality.balance.positive,0);assert.equal(low.quality.balance.limited,true);assert.deepEqual(low.issues,[]);
+ const multi=deepGenerate(s,'待人有禮，但經常遲到、忘記打掃');assert.deepEqual(multi.coverage.missingGoals,[]);assert.equal(multi.quality.warning.explicit.length,2);
+ const conflict=deepGenerate([5,5,5,5,5,5],'經常說謊');assert.deepEqual(conflict.coverage.missingGoals,[]);assert.ok(conflict.quality.evidence.strengths.every(e=>e.source!=='等第'||!conflict.quality.evidence.blockedGradeDimensions.includes(e.dimension)));assert.doesNotMatch(conflict.comment,/言行誠懇|待人誠懇|重視誠信/);
+});
