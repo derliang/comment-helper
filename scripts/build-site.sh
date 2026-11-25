@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p site/vendor
-cp index.html style.css app.mjs engine.mjs importers.mjs advanced.mjs handoff.mjs original-prompt.md site/
+cp index.html style.css app.mjs engine.mjs importers.mjs advanced.mjs handoff.mjs roundtrip.mjs original-prompt.md site/
 # Serve version-pinned scripts from the deployed site; no third-party scripts at runtime.
 curl --fail --location --retry 3 --max-time 90 https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js -o site/vendor/xlsx.full.min.js
 curl --fail --location --retry 3 --max-time 90 https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js -o site/vendor/jszip.min.js
