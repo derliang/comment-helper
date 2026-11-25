@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.9.6-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.9.7-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.9.7-beta | 本機候選排序剪枝、延後風格計算、固定合成資料輸出回歸。 |
 | v0.9.6-beta | 手機篩選與選用 AI 展開排版、全班矩陣局部捲動、行動版溢出診斷。 |
 | v0.9.5-beta | 完整班級端對端驗收、自動補齊還原資料、硬性品質生成防護。 |
 | v0.9.4-beta | 強化去重優先、全高分延續期待、否定範圍、例外篩選、單生 AI 交接及手機操作驗收。 |
@@ -166,3 +167,7 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 ### v0.9.6
 
 手機版選用 AI 功能改為就地展開，避免浮動選單超出畫面。篩選與工具列可換行，評分矩陣僅表格內水平捲動，不拉寬頁面；全班評語編輯及下載區遵守視窗寬度。保留 375px 版面檢查並增加溢出元素診斷。
+
+### v0.9.7
+
+在保留原排序及快速路徑的前提下，排除已確定無法勝過目前最佳候選的比較，提前停止不可能合格或勝出的歷史相似度檢查，延後風格擬合。新增12筆合成資料的舊版輸出逐字回歸測試。一次執行環境對照約3.8秒降至1.3秒（非手機或瀏覽器正式效能基準）。

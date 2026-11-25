@@ -134,8 +134,15 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
  const consider=s=>{
   const n=length(s);if(n<42||n>50||considered.has(s)||validate(s,[]).length)return false;considered.add(s);
   const coverage=[...specific,...targets].filter(x=>s.includes(x)).length;
-  const cf=features(s);let risk=0;for(const h of hf){risk=Math.max(risk,compare(cf,h));if(risk===1)break;}
-  const natural=naturalQuality(s)+(ranked.some(p=>s.startsWith(p))||specific.some(p=>s.startsWith(p))||alternateStrengths.some(p=>s.startsWith(p))?1:0)+(development.some(p=>s.includes(p))&&(specific.length+ranked.length>=2)?-2:0);const key=[risk<=.78?1:0,coverage,risk<1?1:0,natural,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
+  const natural=naturalQuality(s)+(ranked.some(p=>s.startsWith(p))||specific.some(p=>s.startsWith(p))||alternateStrengths.some(p=>s.startsWith(p))?1:0)+(development.some(p=>s.includes(p))&&(specific.length+ranked.length>=2)?-2:0);
+  // Prune only exhaustive searches; preserve the existing fast-path early return.
+  const exhaustive=history.length>0||styled,validBest=exhaustive&&bestKey?.[0]===1;
+  if(validBest&&(coverage<bestKey[1]||(coverage===bestKey[1]&&natural<bestKey[3])))return false;
+  const cf=features(s);let risk=0;
+  for(const h of hf){risk=Math.max(risk,compare(cf,h));if(validBest&&risk>.78)return false;if(validBest&&coverage===bestKey[1]&&natural===bestKey[3]&&-risk<bestKey[4])return false;if(risk===1)break;}
+  const prefix=[risk<=.78?1:0,coverage,risk<1?1:0,natural,history.length?-risk:0,n>=46?1:0];
+  if(exhaustive&&bestKey&&better(bestKey.slice(0,prefix.length),prefix))return false;
+  const key=[...prefix,styled?styleFit(s,profile):0,-Math.abs(48-n)];
   if(better(key,bestKey)){best=s;bestKey=key;}
   return !history.length&&!styled&&coverage===maxPossible&&n>=46&&natural>=4;
  };
