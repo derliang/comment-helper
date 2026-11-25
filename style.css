@@ -7,3 +7,26 @@
 .attention{color:#a85a17;font-size:1rem}.attention.critical{color:#b91c1c}#styleEditor{padding:12px;border:1px solid #c9dcd1;border-radius:10px;margin:12px 0}
 
 #list[data-density=compact] .summary{display:none}#list[data-density=scores] .summary p{display:none}.rubric{background:#f5f8f5;border-radius:8px;padding:10px 12px;font-size:13px}.rubric details{padding:5px}.rubric summary{cursor:pointer;font-weight:650}.rubric p{line-height:1.6}#studentDialog label{display:grid;gap:5px;margin:12px 0}#importPreview:empty{display:none}#importPreview{max-height:220px;overflow:auto}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid #245a46;outline-offset:2px}@media(max-width:400px){.rating{grid-template-columns:75px repeat(5,minmax(0,1fr));gap:3px}.rating .legend{font-size:9px}.rating .label{font-size:12px}.stat{padding:8px 5px}.stats{gap:5px}.stat b{font-size:20px}.toolbar button{font-size:12px;padding:8px}.student-head{gap:6px;padding:12px}}
+
+/* Compact score controls: keep the full scale within one visual scan. */
+.rating{width:min(100%,610px);grid-template-columns: minmax(126px,142px) repeat(5,minmax(0,78px));gap:5px 6px;justify-content:start;align-items:center}
+.rating .label{font-size:16px;font-weight:750;line-height:1.25}
+.rating .legend{font-size:14px;font-weight:750;line-height:1.2;overflow-wrap:normal}
+.rating button{min-height:33px;height:33px;padding:3px 2px;font-size:15px;border-radius:7px}
+.download-toolbar{padding:10px 12px;background:#e9f0eb;border:1px solid #d9e5dc;border-radius:11px;gap:8px}
+.download-label{font-size:13px;font-weight:700;margin-right:3px;color:#49695b}
+button.download-word{background:#185abd;color:#fff;border-color:#185abd}
+button.download-excel{background:#107c41;color:#fff;border-color:#107c41}
+button.download-excel-full{background:#e8f5ec;color:#145b34;border-color:#77b692}
+button.copy-action{background:white;color:#35564a;border-color:#b7c9bf}
+button.download-word:hover,button.download-excel:hover{filter:brightness(.91)}
+.admin-panel{border:1px solid var(--line);padding:16px;border-radius:12px;background:white;margin-bottom:22px}
+.admin-panel h3{margin:0 0 8px}.admin-count{font-size:13px;color:#60766a;margin:12px 0}
+.admin-table-wrap{overflow-x:auto}.admin-table{width:100%;border-collapse:collapse;font-size:14px}
+.admin-table th,.admin-table td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+.admin-table th{background:#edf4ee;color:#35564a}.admin-actions{display:flex;gap:6px}
+.admin-actions button,.trash-row button{padding:5px 10px;font-size:13px}
+button.danger-outline{color:#b32631;border-color:#e9b8bc;background:#fff4f4}
+.trash-panel{margin-top:16px;padding:10px;background:#f3f6f3;border-radius:8px}
+.trash-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+@media(max-width:760px){.rating{width:min(100%,590px);grid-template-columns:minmax(83px,116px) repeat(5,minmax(0,1fr));gap:4px}.rating .label{font-size:13px}.rating .legend{font-size:11px;line-height:1.25}.rating button{height:35px;min-height:35px;font-size:14px}.download-toolbar{padding:8px}.download-label{width:100%}}
