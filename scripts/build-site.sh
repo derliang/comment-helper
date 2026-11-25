@@ -11,3 +11,4 @@ node --check site/vendor/jszip.min.js
 printf 'SheetJS CE 0.20.3 (Apache-2.0); JSZip 3.10.1 (MIT or GPL-3.0); upstream notices are retained in the distributed scripts.\n' > site/vendor/NOTICE.txt
 # Publish version metadata (Teacher Hub reads it to update the tool card's version).
 node scripts/write-version-json.mjs
+node scripts/version-assets.mjs

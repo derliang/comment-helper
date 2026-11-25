@@ -228,3 +228,11 @@ function sameRatingTheme(a,b){
 
 // Level 3 means adequate, not excellent. Praise only the rated dimension, without inventing concrete deeds.
 const basicStrengths=[['日常作息大致有序','生活常規大致能配合'],['大致能維持環境整潔','整潔習慣已有基本表現'],['與人應對大致合宜','大致能維持基本禮節'],['大致能配合班級事務','班級服務已有基本表現'],['待人誠信大致合宜','日常言行大致合宜'],['大致能配合團體規範','自我管理已有基本表現']];
+
+/** Read-only descriptions, sourced directly from the actual built-in rules. */
+export const builtinSemanticRules=observations.map(r=>Object.freeze({id:r.id,dimension:r.dim===null?'不限向度':dims[r.dim],positive:r.positive?.source||'',negative:r.negative?.source||'',exclusion:r.neutral?.source||'',strength:r.good||'',goal:r.goal||''}));
+export function inspectObservation(scores,note='',profile={}){
+ if(!complete(scores))throw Error('試驗需完整六向度等第');
+ const custom=profile.semanticRules||[],analysis=analyzeObservation(note,scores,custom),comment=draft(scores,note,[],profile);
+ return {analysis,comment,characters:length(comment),issues:validate(comment,[]),coverage:observationCoverage(note,scores,comment,custom)};
+}
