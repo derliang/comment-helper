@@ -1,5 +1,5 @@
 import {dims,complete,length,similarity,validate ,validSemanticRule} from './engine.mjs';
-export const VERSION='1.11.0';
+export const VERSION='1.10.0';
 export const identity=v=>String(v??'').normalize('NFKC').replace(/\s+/g,'');
 export const sameStudent=(a,b)=>Boolean(identity(a.studentId)&&identity(a.studentId)===identity(b.studentId));
 export function relatedHistory(r,history,projects=[]){return [...history,...projects.flatMap(p=>p.students.filter(x=>x.id!==r.id&&x.comment&&x.confirmed).map(x=>({...x,source:p.name})))].filter(h=>sameStudent(r,h)&&h.comment);}
