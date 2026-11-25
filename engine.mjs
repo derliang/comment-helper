@@ -117,9 +117,10 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
  const eligible=rank.filter(x=>x.v>=4&&!observation.goalDims.includes(x.i));
  const ranked=eligible.map(x=>positive[x.i][x.v===5?0:1]);
  const alternateStrengths=eligible.flatMap(x=>strengthVariations[x.i][x.v===5?0:1]);
+ const basic=ranked.length?[]:rank.filter(x=>x.v===3&&!observation.goalDims.includes(x.i)).flatMap(x=>basicStrengths[x.i]);
  const base=low===3?'日常表現大致符合基本常規':'日常生活可從具體小事逐步累積';
  const neutral=[base,'日常生活中仍有發展的機會','可從日常生活累積穩定表現'];
- const starters=[...new Set([...specific,...ranked,...alternateStrengths,...(!specific.length&&!ranked.length?neutral:[])])];
+ const starters=[...new Set([...specific,...ranked,...alternateStrengths,...basic,...(!specific.length&&!ranked.length?neutral:[])])];
  const weakest=rank.filter(x=>x.v===low);
  let gs=targets.length?[...targets]:weakest.map(x=>gradeGuidance[x.i][low-1]);
  if(!targets.length&&history.length&&low<=3)gs.push(...weakest.flatMap(x=>goalAlternatives[x.i]));
@@ -146,9 +147,9 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
   if(better(key,bestKey)){best=s;bestKey=key;}
   return !history.length&&!styled&&coverage===maxPossible&&n>=46&&natural>=4;
  };
- const first=specific.length?specific:starters;
+ const first=specific.length?specific:basic.length?basic:starters;
  const outcomeFor=g=>allStrong&&!targets.length?['相信這份用心能在日常生活中持續展現','也盼在團體生活中繼續發揮所長','讓這份良好的生活態度延續下去']: [...goalOutcomes(g),...endings];
- const follow=[...new Set([...specific,...ranked,...alternateStrengths,...(allStrong&&!targets.length?maintenance:development)])];
+ const follow=[...new Set([...specific,...ranked,...alternateStrengths,...basic,...(allStrong&&!targets.length?maintenance:development)])];
  outer:for(const a of first)for(const b of follow){if(a===b||similarity(a,b)>.52||sameRatingTheme(a,b))continue;for(const g of gs)for(const l of leads)for(const e of outcomeFor(g)){
   if(consider(a+'，'+b+'，'+l+g+'，'+e+'。'))break outer;
   if(consider(a+'，'+b+'。'+l+g+'，'+e+'。'))break outer;
@@ -221,6 +222,9 @@ function goalOutcomes(g){
 }
 
 function sameRatingTheme(a,b){
- const theme=s=>positive.findIndex((pair,i)=>pair.includes(s)||strengthVariations[i].flat().includes(s));
+ const theme=s=>positive.findIndex((pair,i)=>pair.includes(s)||strengthVariations[i].flat().includes(s)||basicStrengths[i].includes(s));
  const x=theme(a),y=theme(b);return x>=0&&x===y;
 }
+
+// Level 3 means adequate, not excellent. Praise only the rated dimension, without inventing concrete deeds.
+const basicStrengths=[['日常作息大致有序','生活常規大致能配合'],['大致能維持環境整潔','整潔習慣已有基本表現'],['與人應對大致合宜','大致能維持基本禮節'],['大致能配合班級事務','班級服務已有基本表現'],['待人誠信大致符合期待','日常言行大致合宜'],['大致能配合團體規範','自我管理已有基本表現']];
