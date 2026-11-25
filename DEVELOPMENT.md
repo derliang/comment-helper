@@ -83,3 +83,7 @@ v1.3.2 已通過 CI/Pages（45588231761）。因使用者指出事件操作式�
 - v1.4.1：根據三份歷年評語的學期篇章層級（不複製原始學生文字）調整肯定與發展方向；同分46人四組直接驗證：[{"v":1,"unique":46,"missing":0,"ms":527},{"v":3,"unique":46,"missing":0,"ms":3961},{"v":5,"unique":46,"missing":0,"ms":2939},{"v":"mixed","unique":46,"missing":0,"ms":1846}]。最新CI待確認；不以自動檢查取代教師語感判定。
 
 - v1.4.2：學期發展措辭、近義重複與基礎養成程度排序；直接測試 9/9 項及四組班級：[{"v":1,"unique":46,"missing":0,"ms":502},{"v":3,"unique":46,"missing":0,"ms":3957},{"v":5,"unique":46,"missing":0,"ms":2937},{"v":"mixed","unique":46,"missing":0,"ms":1907}]。 v1.4.0 CI測試成功但因更新取消舊部署；最新完整CI待確認。未改寫任何真實學生評語。
+
+## 本機 pre-push
+
+`.githooks/pre-push` 在 push 前跑 `node --check` 與除 `tests/engine.test.mjs`（約 5 分鐘）外的測試。新電腦 clone 後執行一次 `git config core.hooksPath .githooks` 才生效；完整測試與 E2E 仍手動跑。
