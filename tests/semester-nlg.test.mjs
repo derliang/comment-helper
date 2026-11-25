@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature,semesterLanguageInventory,semesterLexicalInventory,semesterToneSyntaxInventory,semesterWordingQuality} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature,semesterLanguageInventory,semesterLexicalInventory,semesterToneSyntaxInventory,semesterWordingQuality,semesterStyleModel,semesterStyleFit} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
 const s=[4,4,4,4,4,3];
 test('semester evaluation abstracts incidents into enduring developmental concepts',()=>{for(const [note,concept,re] of [['待人有禮，但擅自離開教室','生活自律與規範',/自律|自我管理/],['熱心協助同學，但經常與同學爭執','人我調和',/人我|人際|相處/],['熱心協助同學，但經常遲到','時間管理',/守時/],['熱心協助同學，但忘記打掃','整潔與責任',/整潔|環境維護/]]){const x=deepGenerate(s,note);assert.match(x.comment,re);assert.ok(x.chosenGoals.some(e=>e.concept===concept));assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.issues,[]);assert.doesNotMatch(x.comment,/先向師長說明|先聽對方說完|擅自離開|將有助於|提早做好出門/);assert.equal(x.quality.level,'學期總結性評量');}});
 test('explicit isolated incidents do not establish semester-wide defects or strengths',()=>{const p=semesterPlan([4,4,4,4,4,4],'待人有禮，但今天擅自離開教室，某次協助班級活動');assert.equal(p.deferred.length,2);assert.equal(p.focus,'延續優勢');assert.equal(p.observedGoals.length,0);assert.ok(!p.observed.some(e=>e.id==='classEvents'));const x=deepGenerate([4,4,4,4,4,4],'今天擅自離開教室');assert.equal(x.plan.focus,'延續優勢');assert.deepEqual(x.issues,[]);});
@@ -163,4 +163,13 @@ test('quality distinguishes repeated action from legitimate topic continuity',()
  const specific=semesterWordingQuality('生活常規良好，班級服務良好',['時間管理仍須加強'],['養成守時習慣']);
  assert.equal(repeated.warningEcho,1);assert.equal(specific.warningEcho,0);assert.ok(repeated.penalty>specific.penalty);
  const x=deepGenerate(s,'待人有禮，但經常遲到、忘記打掃');assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.equal(x.quality.warning.explicit.length,2);assert.ok(x.quality.balance.ratio>.244);assert.ok(Number.isFinite(x.quality.wording.penalty));
+});
+
+
+test('local style learning uses structural categories only and requires enough independent samples',()=>{
+ const samples=lead=>['培養自律習慣','增進時間觀念','加強整潔責任','重視團體規範','增進溝通能力','培養負責態度'].map(v=>'生活常規良好，待人有禮；'+lead+v+'，使日常表現更加穩定。');
+ const a=samples('若能'),b=samples('期許能'),am=semesterStyleModel({examples:a}),bm=semesterStyleModel({examples:b});
+ assert.ok(semesterStyleFit(a[0],am)>semesterStyleFit(b[0],am));assert.ok(semesterStyleFit(b[0],bm)>semesterStyleFit(a[0],bm));assert.equal(semesterStyleModel({examples:[a[0],a[0],a[0]]}).confidence,0);assert.doesNotMatch(JSON.stringify(am),/生活常規良好|待人有禮|時間觀念/);
+ const p={examples:['增進自律','培養習慣','改善作息','重視規範','加強整潔','學習規劃'].map(v=>'擅長雕塑，具藝術創意；期許能'+v+'，使整體表現更好。')};
+ const x=deepGenerate(s,'待人有禮，但經常遲到',[],p);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.match(x.comment,/守時/);assert.doesNotMatch(x.comment,/雕塑|藝術創意/);assert.equal(x.quality.style.samples,6);
 });
