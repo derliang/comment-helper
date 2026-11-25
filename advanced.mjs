@@ -1,5 +1,5 @@
 import {dims,complete,length,similarity,validate} from './engine.mjs';
-export const VERSION='0.2.1-beta';
+export const VERSION='0.2.2-beta';
 export const identity=v=>String(v??'').normalize('NFKC').replace(/\s+/g,'');
 export const sameStudent=(a,b)=>Boolean(identity(a.studentId)&&identity(a.studentId)===identity(b.studentId));
 export function relatedHistory(r,history,projects=[]){return [...history,...projects.flatMap(p=>p.students.filter(x=>x.id!==r.id&&x.comment&&x.confirmed).map(x=>({...x,source:p.name})))].filter(h=>sameStudent(r,h)&&h.comment);}
@@ -13,3 +13,23 @@ export function matchHistoricalId(history,index,value){const id=identity(value);
 
 // Stable IDs take precedence. A seat collision with another ID is a conflict, not a merge.
 export function mergeRoster(existing,incoming){const students=existing.map(r=>({...r,scores:[...r.scores],legacy:{...r.legacy}}));let added=0,updated=0,conflicts=0;for(const r of incoming){const seat=identity(r.seat).replace(/^0+(?=\d)/,''),sameSeat=students.find(x=>identity(x.seat).replace(/^0+(?=\d)/,'')===seat);const sameId=students.find(x=>sameStudent(x,r));const old=sameId||sameSeat;if(!old){students.push(r);added++;continue;}if(old.confirmed||identity(old.name)!==identity(r.name)||(old.studentId&&r.studentId&&!sameStudent(old,r))||(sameId&&sameSeat&&sameId!==sameSeat)){conflicts++;continue;}old.studentId||=r.studentId;old.scores=old.scores.map((v,i)=>v??r.scores[i]);old.note||=r.note;old.comment||=r.comment;old.legacy={...r.legacy,...old.legacy};updated++;}students.sort((a,b)=>Number(a.seat)-Number(b.seat));return {students,added,updated,conflicts};}
+
+/** Transparent synonym-based local signals. Advisory only, not an embedding model. */
+const concepts=[
+ ['punctuality',/守時|準時|遲到|時間安排|安排時間/],
+ ['cleanliness',/整潔|打掃|整理環境|環境清潔|整理習慣/],
+ ['courtesy',/有禮|禮貌|應對得宜|應對方式|尊重師長/],
+ ['service',/班級事務|班級服務|服務班級|公務|團體事務/],
+ ['integrity',/誠懇|誠信|言行一致|誠實|守信/],
+ ['selfregulation',/自律|自我管理|生活常規|團體規範|團體規則/],
+ ['peer',/同學|同儕|人我|相處和睦|人際互動/],
+ ['study',/複習|讀書方法|學習方法|增加練習|學習實力/],
+ ['attention',/專注|分心|注意力/],
+ ['confidence',/自信|勇於表達|主動表達/],
+ ['responsibility',/盡責|負責|份內|責任感/]
+];
+const conceptSet=s=>new Set(concepts.filter(([,re])=>re.test(s)).map(([k])=>k));
+export function conceptOverlap(a,b){const x=conceptSet(a),y=conceptSet(b);let n=0;for(const k of x)if(y.has(k))n++;return {shared:n,score:x.size+y.size?2*n/(x.size+y.size):0};}
+export function localHistoryWarnings(comment,prior=[]){if(!comment)return [];const matches=prior.filter(h=>{const m=conceptOverlap(comment,h.comment||'');return m.shared>=2&&m.score>=.8;});return matches.length?['與同學號過往評語有相近的觀察主題（'+matches.length+' 則），請核對是否仍符合本學期實況。']:[];}
+export function approvedStyle(profile,versions=[]){const last=versions.at(-1);return last?{...profile,preferred:[...new Set([...last.preferred,...profile.preferred])],approvedVersion:last.version}:profile;}
+export function saveStyleVersion(versions,preferred){const words=[...new Set(String(preferred).split(/[、，,\n]+/).map(s=>s.trim()).filter(Boolean))];if(!words.length||words.length>40||words.some(w=>length(w)>16))throw Error('請輸入 1～40 個偏好詞語，每個不超過 16 字');return [...versions,{version:(versions.at(-1)?.version||0)+1,preferred:words,createdAt:new Date().toISOString()}];}

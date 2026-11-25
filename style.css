@@ -3,3 +3,5 @@
 .version{display:inline-block;font-size:12px;vertical-align:middle;letter-spacing:.3px;background:#e2ede5;color:#245a46;padding:5px 9px;border-radius:20px;white-space:nowrap}footer{margin-top:36px;padding:20px 0;border-top:1px solid var(--line);font-size:12px;color:#657b70}footer a{color:var(--green)}.prior{background:#f3f7f4;border-radius:8px;padding:12px}.prior p{font-size:13px}.historyItem label,#settings label{display:block;margin:9px 0}.historyItem input,#settings input:not([type=checkbox]):not([type=file]){max-width:100%}#historySearch{display:block;width:100%;margin:8px 0 15px}
 
 @media(max-width:760px){.keyboard-hint{display:none}header{gap:8px}h1 .version{font-size:10px;padding:4px 6px}.rating button{min-height:42px}}
+
+.attention{color:#a85a17;font-size:1rem}.attention.critical{color:#b91c1c}#styleEditor{padding:12px;border:1px solid #c9dcd1;border-radius:10px;margin:12px 0}

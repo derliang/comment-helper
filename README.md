@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.2.1-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.2.2-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -77,6 +77,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.2.2-beta | 教師審核風格版本、舊版恢復為新版本、同學號本機觀察主題提醒、低分向度旗標。 |
 | v0.2.1-beta | 修正歷史學號核對後返回工作台未重新呈現歷史評語。 |
 | v0.2.0-beta | 標題／頁尾／分頁版號、AI 代理及獨立語意核對、教師修訂風格回饋、歷史學號連結、匯入衝突保護、評語鎖定、鍵盤／全班基準評分、完整 Excel、端到端發布閘門、固定版本靜態依賴。 |
 | v0.1.5-alpha | 真實舊版檔案相容性修正、多工作表、跨列 Word、歷史匯入去重、正式匯出前檢查。 |
@@ -87,3 +88,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 ## 尚未承諾的功能
 
 獨立雲端資料庫與帳號、跨裝置同步、真正模型微調、正式外部 AI 服務的商用部署與校方個資合規審核仍需另行決定。語意評估和風格模仿需真實模型驗收；不能把模擬服務測試當作供應商已連線或教育適切性保證。
+
+### 教師風格版本與本機主題核對
+
+歷史頁面可審核偏好用詞、儲存版本，或以舊版偏好建立新版本而不覆蓋紀錄。已確認的風格會優先參與草稿生成及 AI 上下文；自動統計與人工修訂樣本仍保留。學生同學號歷史評語新增同義觀察主題的本機提醒，僅供人工判斷，不等同語意模型或保證不重複。
