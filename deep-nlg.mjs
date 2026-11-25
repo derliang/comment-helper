@@ -1,5 +1,5 @@
 import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='2.0.2';
+export const NLG_VERSION='2.0.3';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -362,7 +362,19 @@ function termOutcomes(g,focus){
  if(/學習/.test(g.label))return ['使學習表現更加穩定','讓學習與個人成長更具發展性'];
  return ['使整體表現更臻成熟','使個人的發展更加穩定'];
 }
-const termLeads=p=>unique([...(p.count&&p.features?.usesDirectAddress/p.count>=.6?['期許妳能','希望妳能','期待妳能']:[]),'若能','期許能','希望能','期待能','盼能','期盼能']);
+// A conditional expectation needs an independent consequent, not an unfinished wish.
+function termConsequences(g,focus){
+ if(focus==='延續優勢')return ['相信能持續發揮所長','各項優勢將更為穩固'];
+ if(g.label==='時間管理')return ['時間安排將更有條理','生活步調將更加從容'];
+ if(g.dim===0)return ['生活步調將更有條理','日常表現將更加穩定'];
+ if(g.dim===1)return ['整潔表現將更為穩定','生活習慣將更為成熟'];
+ if(g.dim===2)return ['人際關係將更為融洽','與同儕相處將更為和諧'];
+ if(g.dim===3)return ['相信能為團體多盡心力','服務表現將更為成熟'];
+ if(g.dim===4)return ['彼此的信任將更加穩固','言行表現將更臻成熟'];
+ if(g.dim===5)return ['整體表現將更加穩健','生活安排將更有條理'];
+ return /學習/.test(g.label)?['學習表現將更為穩定']:['整體表現將更臻成熟'];
+}
+const termLeads=p=>unique([...(p.count&&p.features?.usesDirectAddress/p.count>=.6?['期許妳能','希望妳能','期待妳能']:[]),'若能','期許能','希望能','期待能','盼能','期盼能','期望能','也盼能']);
 function termDistinct(a,b){if(a.source==='等第'&&b.source==='等第'&&[0,5].includes(a.dim)&&[0,5].includes(b.dim))return false;if(a.source==='觀察'&&['help','carePeers'].includes(a.id)&&b.source==='等第'&&b.dim===3)return similarity(a.phrase,b.phrase)<.45;return distinct(a,b);}
 function termPool(p,profile){
  const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
@@ -377,7 +389,7 @@ function termPool(p,profile){
  }
  const add=(head,gg,surfaces,lead,tail,sep)=>{
   const goal=surfaces.join('，並'),text=head.text+sep+lead+goal+(tail?'，'+tail:'')+'。',n=length(text);
-  if(n<42||n>50||out.has(text)||eventWording.test(text)||harshWording.test(text)||validate(text,[]).length)return;
+  if(n<42||n>50||out.has(text)||eventWording.test(text)||harshWording.test(text)||/能[^，；。]{0,18}更能/.test(text)||validate(text,[]).length)return;
   out.set(text,{text,ss:head.ss,gg,surfaces,form:sep==='。'?'雙句學期期許':'分號學期期許',n,headLen:length(head.text),tail});
  };
  for(const head of heads)for(const gg of groups){
@@ -387,8 +399,8 @@ function termPool(p,profile){
    const base=length(head.text+surfaces.join('，並'))+2;
    for(const l of leads){
     const size=base+length(l);
-    if(size>=42&&size<=50)for(const sep of ['；','。'])add(head,gg,surfaces,l,'',sep);
-    if(gg.length===1&&size<50)for(const tail of termOutcomes(a,p.focus)){
+    if(l!=='若能'&&size>=42&&size<=50)for(const sep of ['；','。'])add(head,gg,surfaces,l,'',sep);
+    if(gg.length===1&&size<50)for(const tail of (l==='若能'?termConsequences(a,p.focus):termOutcomes(a,p.focus))){
      if(size+1+length(tail)>=42&&size+1+length(tail)<=50)add(head,gg,surfaces,l,tail,'；');
     }
    }
@@ -405,7 +417,7 @@ function termCandidates(p,profile){
 }
 function termStatic(c,p){
  const selected=[...c.ss,...c.gg],covered=[...p.observed,...p.goals.filter(x=>x.source==='觀察')].filter(e=>selected.some(x=>x.kind===e.kind&&x.id===e.id&&x.phrase===e.phrase)||e.kind==='goal'&&c.surfaces.some(v=>e.variants?.includes(v)));
- const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步','相處','人際','互動','能維持','人我'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
+ const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步','相處','人際','互動','能維持','人我','整潔','規範','言行','守時','承擔','主動','學習'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
  const grade=c.ss.filter(e=>e.source==='等第').reduce((n,e)=>n+e.grade-2,0),balance=c.ss.every(x=>x.source==='中性')?0:-Math.abs(c.headLen-22)*.3,mismatch=p.focus==='延續優勢'&&c.ss.some(e=>c.gg.some(g=>g.dim===e.dim))?1:0;
  let coherence=0;
  if(c.ss.some(e=>e.source==='觀察'))for(const b of c.ss.filter(e=>e.source==='等第')){
@@ -416,7 +428,9 @@ function termStatic(c,p){
  const redundantOutcome=c.tail&&(/更臻成熟|更加成熟|更為成熟/.test(c.tail)&&/更加成熟|更臻成熟/.test(c.surfaces.join('')))?2.5:0;
  const degreePenalty=c.gg.reduce((n,e,i)=>n+(e.source==='等第'&&e.grade===1&&!/逐步|建立|基本|培養/.test(c.surfaces[i])?3:0),0);
  const repeatedDevelopment=/逐步[^。；]{0,30}逐步/.test(c.text)?4:0;
- return {...c,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:c.text.includes('若能'),wish:/希望|期許|期待|盼能/.test(c.text)};
+ const parallelModal=c.ss.length===2&&c.ss.every(e=>e.phrase.startsWith('能'))?1.4:0;
+ const repeatedCausative=c.tail&&/^[使讓]/.test(c.tail)&&c.surfaces.some(v=>/^[使讓]/.test(v))?2:0;
+ return {...c,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty-parallelModal-repeatedCausative,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:c.text.includes('若能'),wish:/希望|期許|期待|盼能|期望/.test(c.text)};
 }
 function termScore(c,profile,div){
  const diversity=-(div.openings.get(c.open)||0)*.8-(div.endings.get(c.end)||0)*.6-(div.connectives.get(c.connector)||0)*.15-(div.shapes.get(c.shape)||0)*.05;
