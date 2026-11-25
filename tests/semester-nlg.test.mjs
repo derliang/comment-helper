@@ -149,3 +149,10 @@ test('balanced composition respects evidence and all explicitly recorded weaknes
  const multi=deepGenerate(s,'待人有禮，但經常遲到、忘記打掃');assert.deepEqual(multi.coverage.missingGoals,[]);assert.equal(multi.quality.warning.explicit.length,2);
  const conflict=deepGenerate([5,5,5,5,5,5],'經常說謊');assert.deepEqual(conflict.coverage.missingGoals,[]);assert.ok(conflict.quality.evidence.strengths.every(e=>e.source!=='等第'||!conflict.quality.evidence.blockedGradeDimensions.includes(e.dimension)));assert.doesNotMatch(conflict.comment.split(/[；。]|，(?:但|惟)/)[0],/言行誠懇|待人誠懇|重視誠信/);assert.match(conflict.comment,/誠信|言行一致/);
 });
+
+
+test('multi-goal composition preserves concrete domains and supports a distinct third affirmation',()=>{
+ const x=deepGenerate(s,'待人有禮，但經常遲到、忘記打掃');assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.equal(x.quality.warning.explicit.length,2);assert.ok(x.quality.balance.ratio>.244,x.comment);assert.match(x.comment,/守時/);assert.match(x.comment,/整潔/);
+ const f=deepGenerate(s,'上課容易分心');assert.match(f.comment,/學習專注/);for(const a of deepAlternatives(s,'上課容易分心',[],{},f.comment,3))assert.match(a,/學習專注/);
+ const m=deepGenerate(s,'經常遲到、上課容易分心');assert.deepEqual(m.coverage.missingGoals,[]);assert.match(m.comment,/守時/);assert.match(m.comment,/學習專注/);
+});

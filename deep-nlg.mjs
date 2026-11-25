@@ -642,7 +642,7 @@ function goalTone(e,scores,focus){
  if(e.frequency==='偶發')return '精進引導';
  return e.frequency==='反覆'||(e.dim>=0&&scores[e.dim]<=2)?'明確警醒':'委婉提醒';
 }
-const compactWarningPairs=[["守時仍須改善","養成守時習慣"],["同儕相處仍須改善","培養包容與尊重"],["互動分寸仍須調整","增進尊重與體諒"],["整潔責任仍待落實","確實完成整潔工作"],["生活自律仍須加強","尊重團體規範"],["分內責任仍須加強","確實完成班務"],["言行誠信仍須改善","培養誠信態度"],["守約表現仍須改善","重視履行承諾"],["學習專注仍須加強","培養專注習慣"],["學習責任仍待落實","培養負責態度"]];
+const compactWarningPairs=[["守時仍須改善","培養守時習慣"],["同儕相處仍須改善","培養包容與尊重"],["互動分寸仍須調整","增進尊重與體諒"],["整潔仍待加強","盡好整潔責任"],["生活自律仍須加強","尊重團體規範"],["分內責任仍須加強","確實完成班務"],["言行誠信仍須改善","培養誠信態度"],["守約表現仍須改善","重視履行承諾"],["學習專注仍須加強","培養學習專注的習慣"],["學習責任仍待落實","培養負責態度"]];
 function warningSpec(e){
  if(e.source!=='觀察'||e.time==='改善'||e.frequency==='偶發')return null;
  const r=warningRules.find(([ids,re])=>ids.split(' ').includes(e.id)&&re.test(e.evidence||''));
@@ -716,12 +716,30 @@ function termPool(p,profile){
  const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
  const groups=p.goals.map(g=>[g]);
  for(let i=0;i<Math.min(p.goals.length,6);i++)for(let j=i+1;j<Math.min(p.goals.length,6);j++){
-  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&a.dim!==b.dim)groups.push([a,b]);
+  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&(a.dim!==b.dim||a.source==='觀察'&&b.source==='觀察'))groups.push([a,b]);
  }
  const heads=[];
  for(const a of first){
   heads.push({ss:[a],text:a.phrase});
   for(const b of second)if(termDistinct(a,b)){heads.push({ss:[a,b],text:a.phrase+'，'+b.phrase});heads.push(...portraitHeads(a,b));}
+ }
+ // A third assertion is allowed only when independently supported by a distinct
+ // rubric dimension. Limit candidates to the shortest approved wording per dimension.
+ const multi=p.observedGoals.length>=2;
+ if(multi){
+  const shortByDim=new Map();
+  for(const e of p.strengths.filter(e=>e.source==='等第'&&e.grade>=3)){
+   const old=shortByDim.get(e.dim);if(!old||length(e.phrase)<length(old.phrase))shortByDim.set(e.dim,e);
+  }
+  for(const h of heads.slice()){
+   if(h.ss.length!==2||h.ss.some(e=>e.source==='中性'))continue;
+   if(h.ss[0].dim===h.ss[1].dim)continue;
+   for(const c of shortByDim.values()){
+    if(h.ss.some(e=>e.dim===c.dim||!termDistinct(e,c)))continue;
+    const text=h.text+'，'+c.phrase;
+    if(length(text)<=22)heads.push({ss:[...h.ss,c],text,fused:!!h.fused,multiOnly:true});
+   }
+  }
  }
  const record=(head,gg,surfaces,lead,tail,sep,bridge=false,warnings=[],contrast='',variant=false,goalJoiner='，並',syntax='')=>{
   if(!head.ss.filter(e=>e.source==='觀察').every(e=>head.text.includes(e.phrase)))return;
@@ -735,7 +753,7 @@ function termPool(p,profile){
   if(syntax==='讓步轉折')text='雖'+head.text+'，惟'+warning+'；'+expectation;
   const n=length(text);
   // Punctuality must name the actual habit, not disappear into generic time management.
-  if(gg.some(g=>g.id==='punctual')&&!/守時/.test(warning+goal))return;
+  if(gg.some((g,i)=>{const domain=g.id==='punctual'?/守時/:g.id==='focus'?/學習專注/:null;return domain&&!domain.test((warnings.find(w=>w.id===g.id)?.text||'')+surfaces[i]);}))return;
   if(syntax&&(!warning||head.ss.some(e=>e.source==='中性')))return;
   if(p.focus==='延續優勢'&&tail&&/持續|繼續|延續/.test(goal)&&/持續|繼續|延續/.test(tail)&&/發揮|展現/.test(goal)&&/發揮|展現/.test(tail))return;
   if(n<42||n>50||out.has(text)||eventWording.test(text)||harshWording.test(text)||/能[^，；。]{0,18}更能/.test(text)||validate(text,[]).length)return;
@@ -758,6 +776,7 @@ function termPool(p,profile){
   if(lead==='若能'&&tail)for(const l of termConditionalLeads)record(head,gg,surfaces,l,tail,sep,bridge,warnings,'',true);
  };
  for(const head of heads)for(const gg of groups){
+  if(head.multiOnly&&gg.length<2)continue;
   const a=gg[0],vs=gg.length===1?a.variants.map(v=>[v]):a.variants.slice(0,2).flatMap(x=>gg[1].variants.slice(0,2).map(y=>[x,y]));
   if(gg.length===1)for(const bridge of bridgesFor(a))if(anchorFor(head,bridge))for(const v of bridge.variants)for(const l of ['期許能','期盼能','希望能','期待能']){add(head,gg,[v],l,'','；',true);add(head,gg,[v],l,'','。',true);}
   const flagged=gg.filter(g=>g.warningVariants?.length);
