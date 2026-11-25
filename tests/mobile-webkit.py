@@ -28,24 +28,24 @@ try:
             if route.request.url.startswith(url+'/'):route.continue_()
             else:external.append(route.request.url);route.abort()
         ctx.route('http**/*',local_only)
-        page.goto(url+'/');page.locator('#importBtn').tap();page.locator('#rosterFile').set_input_files(f);page.locator('#previewImport').tap();expect(page.locator('#importPreview')).to_contain_text('辨識 2 人');page.locator('#applyImport').tap()
+        page.goto(url+'/');page.locator('#menuTools summary').tap();page.locator('#importBtn').tap();page.locator('#rosterFile').set_input_files(f);page.locator('#previewImport').tap();expect(page.locator('#importPreview')).to_contain_text('辨識 2 人');page.locator('#applyImport').tap()
         expect(page.locator('#commentProgressText')).to_contain_text('2 / 2',timeout=90000)
         def width_ok():assert page.evaluate('document.documentElement.scrollWidth <= innerWidth+1')
-        width_ok();page.locator('article.student').first.locator('[data-toggle]').tap();width_ok()
+        width_ok();page.locator('.row').first.tap();width_ok()
         original=page.locator('[data-comment]').input_value();assert '守時' in original and 42<=len(original)<=50
         edited='熱心班級事務，待人誠懇且應對合宜；希望能掌握每日到校時間，事先做好準備，逐步養成守時的習慣。'
         page.locator('[data-comment]').fill(edited);page.locator('[data-note]').tap();expect(page.locator('[data-comment]')).to_have_value(edited)
         page.reload();expect(page.locator('[data-comment]')).to_have_value(edited);expect(page.locator('#commentProgressText')).to_contain_text('2 / 2');width_ok()
         before=len(dialogs)
-        with page.expect_download(timeout=30000) as dl:page.locator('#excel').tap()
+        with page.expect_download(timeout=30000) as dl:page.locator('#menuDl summary').tap();page.locator('#excel').tap()
         result=tmp/'formal.xlsx';dl.value.save_as(result);rows=list(load_workbook(result,read_only=True).active.values);assert len(rows)==3 and rows[1][2]==edited
-        with page.expect_download(timeout=30000) as dl:page.locator('#word').tap()
+        with page.expect_download(timeout=30000) as dl:page.locator('#menuDl summary').tap();page.locator('#word').tap()
         result=tmp/'formal.docx';dl.value.save_as(result)
         with zipfile.ZipFile(result) as z:
             root=ET.fromstring(z.read('word/document.xml'));assert edited in ''.join(root.itertext())
         assert len(dialogs)==before
-        page.locator('#matrixBtn').tap();expect(page.locator('.matrix tbody tr')).to_have_count(2);width_ok();page.locator('#closeClassDialog').tap()
-        page.locator('#classEditBtn').tap();expect(page.locator('[data-class-comment]')).to_have_count(2);width_ok();page.locator('#closeClassDialog').tap()
+        page.locator('#menuTools summary').tap();page.locator('#matrixBtn').tap();expect(page.locator('.matrix tbody tr')).to_have_count(2);width_ok();page.locator('#closeClassDialog').tap()
+        page.locator('#menuTools summary').tap();page.locator('#classEditBtn').tap();expect(page.locator('[data-class-comment]')).to_have_count(2);width_ok();page.locator('#closeClassDialog').tap()
         assert not external,external
         assert not errors,errors
         browser.close();print('PASS: mobile WebKit import, touch rating views, automatic comments, edit persistence, local-only requests, Word and Excel downloads')
