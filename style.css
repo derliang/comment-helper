@@ -5,3 +5,5 @@
 @media(max-width:760px){.keyboard-hint{display:none}header{gap:8px}h1 .version{font-size:10px;padding:4px 6px}.rating button{min-height:42px}}
 
 .attention{color:#a85a17;font-size:1rem}.attention.critical{color:#b91c1c}#styleEditor{padding:12px;border:1px solid #c9dcd1;border-radius:10px;margin:12px 0}
+
+#list[data-density=compact] .summary{display:none}#list[data-density=scores] .summary p{display:none}.rubric{background:#f5f8f5;border-radius:8px;padding:10px 12px;font-size:13px}.rubric details{padding:5px}.rubric summary{cursor:pointer;font-weight:650}.rubric p{line-height:1.6}#studentDialog label{display:grid;gap:5px;margin:12px 0}#importPreview:empty{display:none}#importPreview{max-height:220px;overflow:auto}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid #245a46;outline-offset:2px}@media(max-width:400px){.rating{grid-template-columns:75px repeat(5,minmax(0,1fr));gap:3px}.rating .legend{font-size:9px}.rating .label{font-size:12px}.stat{padding:8px 5px}.stats{gap:5px}.stat b{font-size:20px}.toolbar button{font-size:12px;padding:8px}.student-head{gap:6px;padding:12px}}

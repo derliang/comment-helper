@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.3.1-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.3.2-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -77,6 +77,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.3.2-beta | 五級評量準則、名單預覽、手動新增與編輯、評分復原、清單密度、全班複製、備份格式檢查。 |
 | v0.3.1-beta | 本機教師風格統計排序、同分全班多樣化、保留歷史評分及觀察，避免未修改 AI 草稿反覆污染學習樣本。 |
 | v0.3.0-beta | AI 獨立品質核對（即使未允許歷史分享）、依審核結果重試、容器部署範例及品質狀態顯示。 |
 | v0.2.3-beta | 補充觀察的正負向辨識、個別優點保留、具體成長方向及未知資訊提醒。 |
@@ -107,3 +108,5 @@ v0.3.0 在模型生成之後另外發送品質審查請求，即使未同意提�
 ### 本機風格學習模型
 
 使用歷史教師評語及人工修訂的最終文字，建立字元三連詞頻率分布，搭配教師審核用詞，對候選評語做風格排序。先比較歷史文字相似度，再比較風格適配度，且不從模型直接複製任意歷史文字。未經修改的 AI 草稿即使獲確認，也不自動成為教師風格訓練樣本，以免累積 AI 自我模仿。模型計數保留於瀏覽器，不送往 AI 端點。這是輕量統計學習而非大型模型權重微調。歷史匯入保留可取得的評分、觀察和舊版向度，缺漏仍維持原狀。
+
+五級評量準則的五項既有向度沿用原文件；新增「日常生活表現」的說明為暫定設計，待教師審核。工作台可預覽匯入、手動新增學生及修改未鎖定的基本資料、復原上一筆單人評分、切換精簡／分數／評語顯示、複製正式評語。還原會先驗證備份資料結構，避免以無效資料覆蓋工作。
