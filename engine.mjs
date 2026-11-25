@@ -65,18 +65,26 @@ function allowedNegative(clause,re){
 }
 export function analyzeObservation(note='',scores=[],custom=[]){
  const clauses=String(note).normalize('NFKC').split(/[，,。；;、\n！!]+|但是|但|然而|不過/).map(x=>x.trim()).filter(Boolean);
- const positives=[],goals=[],unknown=[],conflicts=[];
+ const positives=[],goals=[],unknown=[],conflicts=[],goalDims=new Set(),positiveDims=new Set();
  for(const clause of clauses){
   // Old events alone do not establish a current behavior; keep them visible for manual review.
   if(/過去|以前|曾經|原本|一開始/.test(clause)&&!/(?:目前|現在|仍然|依然|本學期|近期|最近|近來)/.test(clause)){unknown.push(clause);continue;}
   let found=false;for(const r of observations){
   const neg=allowedNegative(clause,r.negative)&&!r.neutral?.test(clause)&&!/(?:不再|已不再|不曾|從未|沒有再).{0,8}(?:放棄|遲到|拖延|分心|違規|說謊)/.test(clause)&&!(r.id==='punctual'&&r.positive?.test(clause));
   const pos=allowedPositive(clause,r.positive)&&!neg&&!/(?:不|未|沒有|缺乏|無法|難以|需要|希望能).{0,3}(?:主動|熱心|專注|有禮|誠實|遵守|勇於)/.test(clause);
-  if(neg&&r.goal){goals.push(r.goal);found=true;if(r.dim!==null&&scores[r.dim]===5)conflicts.push('補充觀察與'+dims[r.dim]+'滿分並存，請核對。');}
-  else if(pos&&r.good){positives.push(r.good);found=true;if(r.dim!==null&&scores[r.dim]<=2&&scores[r.dim]>=1)conflicts.push('補充觀察與'+dims[r.dim]+'低分並存，請核對。');}
+  if(neg&&r.goal){goals.push(r.goal);if(r.dim!==null)goalDims.add(r.dim);found=true;if(r.dim!==null&&scores[r.dim]===5)conflicts.push('補充觀察與'+dims[r.dim]+'滿分並存，請核對。');}
+  else if(pos&&r.good){positives.push(r.good);if(r.dim!==null)positiveDims.add(r.dim);found=true;if(r.dim!==null&&scores[r.dim]<=2&&scores[r.dim]>=1)conflicts.push('補充觀察與'+dims[r.dim]+'低分並存，請核對。');}
   else if(r.neutral?.test(clause))found=true;
- }for(const r of custom.filter(validSemanticRule)){if(r.enabled===false)continue;for(const k of r.keywords){const at=clause.indexOf(k);if(at<0)continue;const before=clause.slice(0,at);if(/(?:沒有|不曾|不再|未曾|希望|期待|期許|建議|若能|不|未).{0,6}$/.test(before))continue;(r.kind==='positive'?positives:goals).push(r.phrase);found=true;break;}}if(!found)unknown.push(clause);}
- return {positives:[...new Set(positives)],goals:[...new Set(goals)],unknown,conflicts:[...new Set(conflicts)]};
+ }for(const r of custom.filter(validSemanticRule).sort((a,b)=>(b.priority||0)-(a.priority||0))){if(r.enabled===false)continue;
+  const dim=Number.isInteger(r.dim)?r.dim:null;
+  if(dim!==null&&r.grades?.length&&!r.grades.includes(scores[dim]))continue;
+  if((r.exclusions||[]).some(k=>clause.includes(k)))continue;
+  for(const k of r.keywords.slice().sort((a,b)=>b.length-a.length)){const at=clause.indexOf(k);if(at<0)continue;const before=clause.slice(0,at);
+   if(/(?:沒有|不曾|不再|未曾|希望|期待|期許|建議|若能|不|未).{0,6}$/.test(before))continue;
+   (r.kind==='positive'?positives:goals).push(r.phrase);if(dim!==null)(r.kind==='positive'?positiveDims:goalDims).add(dim);found=true;break;
+  }
+ }if(!found)unknown.push(clause);}
+ return {positives:[...new Set(positives)],goals:[...new Set(goals)],unknown,conflicts:[...new Set([...conflicts,...[...goalDims].filter(i=>positiveDims.has(i)).map(i=>'同一向度有肯定與成長觀察：'+dims[i]+'，保留具體事實並核對。')])],goalDims:[...goalDims],positiveDims:[...positiveDims]};
 }
 
 const positive=[['日常生活表現成熟穩定','生活常規良好'],['主動維護環境整潔','能維持環境整潔'],['待人有禮且應對得宜','待人有禮'],['熱心投入班級事務','能盡責參與班級事務'],['待人誠懇且言行一致','待人誠懇'],['具備良好自我管理能力','能配合生活常規']];
@@ -100,15 +108,15 @@ const goalAlternatives=[
  ['從時間安排練習自我管理','逐步落實生活規範','循序培養自律習慣']
 ];
 const endings=['日常表現將更臻成熟穩定','相信能逐步累積更穩定的表現','將有助於日常生活更加穩定','期待持續培養良好的生活習慣','在團體生活中逐步累積成長經驗','讓生活表現更具穩定性','將有助於建立更穩定的生活常規'];
-const development=['期待在日常生活中逐步累積成長經驗','期盼在團體生活中逐步累積成長經驗','可從日常小事逐步累積成長經驗','未來可從具體生活習慣逐步累積'];
-const maintenance=['期待在團體生活中持續展現良好表現','期盼延續良好的生活態度與習慣','期待持續發揮所長並累積成長經驗'];
+const development=['日常生活可從具體小事累積經驗','團體生活提供許多練習的機會','日常作息與團體互動可逐步練習','從每天的生活安排著手較易持續'];
+const maintenance=['在日常生活中展現良好的態度','能維持值得肯定的生活表現','日常生活態度值得肯定'];
 export function draft(scores,note='',history=[],profile={preferred:[]}){
  if(!complete(scores))return '';
  const rank=scores.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v||a.i-b.i),low=Math.min(...scores),allStrong=low>=4;
  const observation=analyzeObservation(note,scores,profile.semanticRules||[]),specific=observation.positives,targets=observation.goals;
- const ranked=rank.filter(x=>x.v>=4).map(x=>positive[x.i][x.v===5?0:1]);
- const base=low===3?'日常表現大致符合基本常規':low===2?'日常生活常規仍有穩定空間':'日常生活仍需逐步建立基本常規';
- const neutral=[base,'日常生活各方面仍有成長空間','可從日常生活累積穩定表現'];
+ const ranked=rank.filter(x=>x.v>=4&&!observation.goalDims.includes(x.i)).map(x=>positive[x.i][x.v===5?0:1]);
+ const base=low===3?'日常表現大致符合基本常規':'日常生活可從具體小事逐步累積';
+ const neutral=[base,'日常生活中仍有發展的機會','可從日常生活累積穩定表現'];
  const starters=[...new Set([...specific,...ranked,...(!specific.length&&!ranked.length?neutral:[])])];
  const weakest=rank.filter(x=>x.v===low);
  let gs=targets.length?[...targets]:weakest.map(x=>gradeGuidance[x.i][low-1]);
@@ -116,7 +124,7 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
  if(!targets.length&&allStrong)gs.push('持續發揮所長','延續良好的生活習慣');
  if(targets.length>1)gs.unshift(targets.slice(0,2).join('並'));
  gs=[...new Set(gs)];
- const leads=[...new Set([...(profile.preferred||[]).map(w=>({'希望':'希望能','期待':'期待能','期許':'期許能','若能':'若能','若能更':'若能'})[w]).filter(Boolean),'若能','期待能','希望能'])];
+ const leads=[...new Set([...(profile.preferred||[]).map(w=>({'希望':'希望能','期待':'期待能','期許':'期許能','若能':'若能','若能更':'若能'})[w]).filter(Boolean),'若能','期待能','希望能','期許能','建議'])];
  const hf=history.map(features),styled=Boolean(profile.model?.total||profile.preferred?.length||profile.structure);
  let best='',bestKey=null;
  const considered=new Set(),maxPossible=specific.length+targets.length;
@@ -125,17 +133,18 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
   const n=length(s);if(n<42||n>50||considered.has(s)||validate(s,[]).length)return false;considered.add(s);
   const coverage=[...specific,...targets].filter(x=>s.includes(x)).length;
   const cf=features(s);let risk=0;for(const h of hf){risk=Math.max(risk,compare(cf,h));if(risk===1)break;}
-  const key=[risk<1?1:0,coverage,risk<=.78?1:0,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
+  const natural=naturalQuality(s);const key=[risk<1?1:0,coverage,risk<=.78?1:0,natural,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
   if(better(key,bestKey)){best=s;bestKey=key;}
-  return !history.length&&!styled&&coverage===maxPossible&&n>=46;
+  return !history.length&&!styled&&coverage===maxPossible&&n>=46&&natural>=4;
  };
  const first=specific.length?specific:starters;
  const follow=[...new Set([...starters,...(allStrong&&!targets.length?maintenance:development)])];
  outer:for(const a of first)for(const b of follow){if(a===b)continue;for(const g of gs)for(const l of leads)for(const e of endings){
   if(consider(a+'，'+b+'，'+l+g+'，'+e+'。'))break outer;
+  if(consider(a+'，'+b+'。'+l+g+'，'+e+'。'))break outer;
   if(profile.structure?.semicolon>.25&&consider(a+'，'+b+'；'+l+g+'，'+e+'。'))break outer;
  }}
- if(!best||bestKey[1]<maxPossible||bestKey[0]===0){
+ if(!best||bestKey[1]<maxPossible||bestKey[0]===0||bestKey[2]===0){
   for(const a of first)for(const b of follow)for(const g of gs)for(const l of leads){
    if(a===b)continue;consider(a+'，'+b+'，'+l+g+'。');
    for(const e of endings)consider(a+'，'+l+g+'，'+e+'。');
@@ -168,4 +177,16 @@ export function observationCoverage(note,scores,comment,custom=[]){
 }
 
 export const builtinSemanticTopics=observations.map(r=>r.good||r.goal).filter(Boolean);
-export function validSemanticRule(r){return !!r&&typeof r.topic==='string'&&r.topic.trim().length>0&&r.topic.length<=50&&Array.isArray(r.keywords)&&r.keywords.length>0&&r.keywords.length<=20&&r.keywords.every(k=>typeof k==='string'&&k.trim()&&k.length<=30)&&['positive','goal'].includes(r.kind)&&typeof r.phrase==='string'&&length(r.phrase)>=3&&length(r.phrase)<=16&&!/[\r\n，。；！？]/.test(r.phrase)&&!validate(r.phrase.padEnd(42,'字'),[]).length;}
+export function validSemanticRule(r){return !!r&&typeof r.topic==='string'&&r.topic.trim().length>0&&r.topic.length<=50&&Array.isArray(r.keywords)&&r.keywords.length>0&&r.keywords.length<=20&&r.keywords.every(k=>typeof k==='string'&&k.trim()&&k.length<=30)&&['positive','goal'].includes(r.kind)&&(r.dim===undefined||r.dim===null||Number.isInteger(r.dim)&&r.dim>=0&&r.dim<6)&&(r.grades===undefined||Array.isArray(r.grades)&&r.grades.every(v=>Number.isInteger(v)&&v>=1&&v<=5))&&(r.priority===undefined||Number.isInteger(r.priority)&&r.priority>=0&&r.priority<=9)&&(r.exclusions===undefined||Array.isArray(r.exclusions)&&r.exclusions.length<=20&&r.exclusions.every(k=>typeof k==='string'&&k.trim()&&k.length<=30))&&typeof r.phrase==='string'&&length(r.phrase)>=3&&length(r.phrase)<=16&&!/[\r\n，。；！？]/.test(r.phrase)&&!validate(r.phrase.padEnd(42,'字'),[]).length;}
+
+/** Explainable rhythm score, not an AI detector or objective measure of human writing. */
+export function naturalQuality(s){
+ const marker=/若能|期待能|希望能|期許能|建議/;
+ const i=s.search(marker),head=i<0?s:s.slice(0,i),tail=i<0?'':s.slice(i);
+ let n=0;if(i>=8)n+=2;if(!/若能|期待|希望|期許|建議/.test(head))n++;
+ if((tail.match(/若能|期待|希望|期許|建議/g)||[]).length===1)n++;
+ if(!/持續持續|逐步逐步|更加更|習慣.*習慣.*習慣|生活.*生活.*生活.*生活/.test(s))n++;
+ if(/更臻成熟穩定|更具穩定性|累積成長經驗/.test(s))n--;
+ if(/[，；]能[^，；。]{2,12}[，；]能/.test(s))n--;
+ return n;
+}

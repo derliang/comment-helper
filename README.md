@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.7.0-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.8.0-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.8.0-beta | 自然句型、語意規則向度等第與優先序、多重觀察及全班快速評分／評語編輯。 |
 | v0.7.0-beta | 自動正式評語、自由編輯、雙進度、選用保護、語意庫管理及介面更新。 |
 | v0.6.1-beta | 強化否定、未來期待、歷史觀察與改善語意；交接指令 1.0.1、覆核判定與本機連線驗收。 |
 | v0.6.0-beta | 全本機評語引擎、五級程度差異、AI 手動交接 Markdown 檔與自我覆評指令；停止外接 AI。 |
@@ -130,3 +131,7 @@ v0.3.0 在模型生成之後另外發送品質審查請求，即使未同意提�
 六向度評分完成後即時生成正式評語，符合硬性規則即可下載，不需逐筆確認。原確認按鈕改為選用的保護功能；原已鎖定資料保留，可解除保護。教師手動修改自動保存，不被批次補齊覆蓋。評分及可下載評語分別統計。設定頁可新增、編輯、停用個人語意規則；舊規則版本保留於備份，內建規則不變。評語版本可查看與復原。全班品質檢查仍提供例外處理。UI 採更緊湊的淺色工作區及雙進度。
 
 GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建置 → Chromium 瀏覽器驗收 → Pages artifact → 部署。伺服器程式與測試檔不納入發布套件。版本常數在 `advanced.mjs`；升級時同步更新 HTML、README 與測試。建置時 `scripts/write-version-json.mjs` 會產生 `site/version.json`（版本數字、通道如 beta、發布日＝首次寫入該版號的 commit 之台灣日期），Teacher Hub 工具站每 3 小時讀取它更新卡片版本；CI 需完整歷史（`fetch-depth: 0`），淺層 clone 會直接中止建置。
+
+## v0.8.0
+
+全班快速評分與集中評語編輯共用原學生資料，單一評語仍是正式結果。個人語意規則可指定向度、適用分數、排除詞、優先序；同向度明確負向觀察抑制泛化肯定。自然度評分為可解釋的規則，非 AI 痕跡檢測，不能保證真人語感。保留 42–50 字、先肯定後期許及歷史去重。
