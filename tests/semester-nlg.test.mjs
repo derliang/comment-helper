@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature,semesterLanguageInventory} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
 const s=[4,4,4,4,4,3];
 test('semester evaluation abstracts incidents into enduring developmental concepts',()=>{for(const [note,concept,re] of [['待人有禮，但擅自離開教室','生活自律與規範',/自律|自我管理/],['熱心協助同學，但經常與同學爭執','人我調和',/人我|人際|相處/],['熱心協助同學，但經常遲到','時間管理',/守時/],['熱心協助同學，但忘記打掃','整潔與責任',/整潔|環境維護/]]){const x=deepGenerate(s,note);assert.match(x.comment,re);assert.ok(x.chosenGoals.some(e=>e.concept===concept));assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.issues,[]);assert.doesNotMatch(x.comment,/先向師長說明|先聽對方說完|擅自離開|將有助於|提早做好出門/);assert.equal(x.quality.level,'學期總結性評量');}});
 test('explicit isolated incidents do not establish semester-wide defects or strengths',()=>{const p=semesterPlan([4,4,4,4,4,4],'待人有禮，但今天擅自離開教室，某次協助班級活動');assert.equal(p.deferred.length,2);assert.equal(p.focus,'延續優勢');assert.equal(p.observedGoals.length,0);assert.ok(!p.observed.some(e=>e.id==='classEvents'));const x=deepGenerate([4,4,4,4,4,4],'今天擅自離開教室');assert.equal(x.plan.focus,'延續優勢');assert.deepEqual(x.issues,[]);});
@@ -108,7 +108,7 @@ test('typed connective variants retain semantic warning, goal and observation co
   const x=deepGenerate(s,note,h),sig=semesterSemanticSignature(x.comment);
   assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.deepEqual(x.coverage.missingGoals,[]);
   assert.equal(x.quality.warning.explicit.length,1);
-  if(/(?:若|如|倘)能/.test(x.comment))assert.match(x.comment,/(?:若|如|倘)能[^；。]+，[^；。]*(?:將|相信)/);
+  if(/(?:若能|如能|倘能|如果能|假如能|倘若能)/.test(x.comment))assert.match(x.comment,/(?:若能|如能|倘能|如果能|假如能|倘若能)[^；。]+，[^；。]*(?:將|相信)/);
   leads.add(sig.lead);transitions.add(sig.transition);h.push(x.comment);
  }
  assert.equal(new Set(h).size,12);assert.ok(leads.size+transitions.size>=6);
@@ -117,4 +117,11 @@ test('semantic fingerprints recognize connective variants and keep warning separ
  const a=semesterSemanticSignature('待人有禮，也能用心完成班級事務；但守時習慣仍不穩定，期盼今後能培養守時的習慣。');
  assert.equal(a.lead,'期盼今後');assert.equal(a.transition,'但');assert.equal(a.addition,'也能');
  assert.ok(a.goals.includes('生活條理'));assert.ok(!a.strengths.includes('生活條理'));
+});
+
+
+test('expanded language inventory doubles each connective resource family without counting combinations',()=>{
+ const n=semesterLanguageInventory();assert.ok(n.wish>=14);assert.ok(n.conditional>=4);assert.ok(n.contrast>=8);assert.ok(n.addition>=6);assert.ok(n.goalJoiners>=2);
+ for(const l of ['如果能','假如能','倘若能']){const a=semesterSemanticSignature('待人有禮；'+l+'培養守時習慣，生活將更有條理。');assert.equal(a.lead,l.slice(0,-1));}
+ const b=semesterSemanticSignature('待人有禮，且能協助班務；只是守時習慣仍不穩定，盼今後能培養守時習慣。');assert.equal(b.transition,'只是');assert.equal(b.addition,'且能');assert.equal(b.lead,'盼今後');
 });

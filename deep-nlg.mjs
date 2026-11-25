@@ -461,10 +461,13 @@ function termConsequences(g,focus){
 const termLeads=p=>unique([...(p.count&&p.features?.usesDirectAddress/p.count>=.6?['期許妳能','希望妳能','期待妳能']:[]),'若能','期許能','希望能','期待能','盼能','期盼能','期望能','也盼能']);
 // Typed connective lexicon: variants retain the assertion and goal, and
 // are introduced one slot at a time to avoid combinatorial candidate growth.
-const termSurfaceLeads=['盼望能','期許日後能','期盼今後能','希望日後能','也期盼能','期望日後能','亦盼能'];
-const termConditionalLeads=['如能','倘能'];
-const termContrastLeads=['但','然而，','不過，','惟'];
-const termAdditions=['亦能','並能','同時也能'];
+const termSurfaceLeads=['盼望能','期許日後能','期盼今後能','希望日後能','也期盼能','期望日後能','亦盼能','期盼日後能','期許今後能','希望今後能','盼今後能','盼日後能','期望今後能','期許未來能','期待日後能'];
+const termConditionalLeads=['如能','倘能','如果能','假如能','倘若能'];
+const termContrastLeads=['但','然而，','不過，','惟','只是','另一方面，','值得留意的是，','須留意的是，'];
+const termAdditions=['亦能','並能','同時也能','且能','又能','並且能','同時能'];
+const termGoalJoiners=['，並','，並且','，同時','，亦能'];
+const termConditionPattern=/(?:若能|如能|倘能|如果能|假如能|倘若能)/;
+export const semesterLanguageInventory=()=>({wish:termSurfaceLeads.length,conditional:termConditionalLeads.length,contrast:termContrastLeads.length,addition:termAdditions.length,goalJoiners:termGoalJoiners.length});
 function termDistinct(a,b){if(a.source==='等第'&&b.source==='等第'&&[0,5].includes(a.dim)&&[0,5].includes(b.dim))return false;if(a.source==='觀察'&&['help','carePeers'].includes(a.id)&&b.source==='等第'&&b.dim===3)return similarity(a.phrase,b.phrase)<.45;return distinct(a,b);}
 function termPool(p,profile){
  const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
@@ -477,8 +480,9 @@ function termPool(p,profile){
   heads.push({ss:[a],text:a.phrase});
   for(const b of second)if(termDistinct(a,b)){heads.push({ss:[a,b],text:a.phrase+'，'+b.phrase});heads.push(...portraitHeads(a,b));}
  }
- const record=(head,gg,surfaces,lead,tail,sep,bridge=false,warnings=[],contrast='',variant=false)=>{
-  const goal=surfaces.join('，並'),text=head.text+sep+(warnings.length?contrast+warnings.map(w=>w.text).join('，')+'，':'')+lead+goal+(tail?'，'+tail:'')+'。',n=length(text);
+ const record=(head,gg,surfaces,lead,tail,sep,bridge=false,warnings=[],contrast='',variant=false,goalJoiner='，並')=>{
+  if(!head.ss.filter(e=>e.source==='觀察').every(e=>head.text.includes(e.phrase)))return;
+  const goal=surfaces.join(goalJoiner),text=head.text+sep+(warnings.length?contrast+warnings.map(w=>w.text).join('，')+'，':'')+lead+goal+(tail?'，'+tail:'')+'。',n=length(text);
   if(p.focus==='延續優勢'&&tail&&/持續|繼續|延續/.test(goal)&&/持續|繼續|延續/.test(tail)&&/發揮|展現/.test(goal)&&/發揮|展現/.test(tail))return;
   if(n<42||n>50||out.has(text)||eventWording.test(text)||harshWording.test(text)||/能[^，；。]{0,18}更能/.test(text)||validate(text,[]).length)return;
   out.set(text,{text,ss:head.ss,gg,surfaces,form:warnings.length?'明確提醒與發展':bridge?'優勢延伸篇章':sep==='。'?'雙句學期期許':'分號學期期許',n,headLen:length(head.text),tail,fused:!!head.fused,bridge,warnings,variant});
@@ -491,6 +495,7 @@ function termPool(p,profile){
    for(const l of termSurfaceLeads)record(head,gg,surfaces,l,tail,sep,bridge,warnings,'',true);
    if(warnings.length&&head.ss.some(e=>e.source!=='中性'))for(const c of termContrastLeads)record(head,gg,surfaces,lead,tail,sep,bridge,warnings,c,true);
    if(head.ss.length===2&&head.text.includes('，也能'))for(const a of termAdditions)record({...head,text:head.text.replace('，也能','，'+a)},gg,surfaces,lead,tail,sep,bridge,warnings,'',true);
+   if(surfaces.length===2)for(const joiner of termGoalJoiners.slice(1))record(head,gg,surfaces,lead,tail,sep,bridge,warnings,'',true,joiner);
   }
   if(lead==='若能'&&tail)for(const l of termConditionalLeads)record(head,gg,surfaces,l,tail,sep,bridge,warnings,'',true);
  };
@@ -544,14 +549,14 @@ const semesterTopicRules=[
 ];
 const semesterTopics=s=>semesterTopicRules.filter(([,re])=>re.test(s)).map(([k])=>k);
 export function semesterSemanticSignature(text){
- const s=String(text||''),m=/[，；。]((?:若|如|倘)能|(?:期許|希望|期待|期盼|期望|也期盼|也盼|亦盼|盼望|盼)(?:日後|今後|未來)?(?:妳|你)?能)/.exec(s);
+ const s=String(text||''),m=/[，；。]((?:若能|如能|倘能|如果能|假如能|倘若能)|(?:期許|希望|期待|期盼|期望|也期盼|也盼|亦盼|盼望|盼)(?:日後|今後|未來)?(?:妳|你)?能)/.exec(s);
  let opening=m?s.slice(0,m.index):s,development=m?s.slice(m.index+m[0].length):'';
  const warn=opening.match(/^(.*)[；。]([^；。]+(?:仍|有待)[^；。]*)$/);if(warn){opening=warn[1];development=warn[2]+'，'+development;}
  const strengths=semesterTopics(opening),goals=semesterTopics(development);
  const lead=m?m[1].replace(/(?:妳|你)?能$/,''):'其他';
  const strengthKey=strengths.join('+')||'未分類',goalKey=goals.join('+')||'未分類';
- const transition=s.match(/[；。](但|然而|不過|惟)(?:，)?/)?.[1]||'無明示';
- const addition=opening.match(/，(同時也能|也能|亦能|並能)/)?.[1]||'無明示';
+ const transition=s.match(/[；。](值得留意的是|須留意的是|另一方面|然而|不過|只是|但|惟)(?:，)?/)?.[1]||'無明示';
+ const addition=opening.match(/，(同時也能|並且能|同時能|也能|亦能|並能|且能|又能)/)?.[1]||'無明示';
  return {strengths,goals,strengthKey,goalKey,pairKey:strengthKey+'→'+goalKey,lead,transition,addition};
 }
 function semesterHistoryDiversity(history){
@@ -592,7 +597,7 @@ function termStatic(c,p){
  const repeatedTail=c.tail?['時間安排','持續','發揮','團體','用心','守時','整潔','相處','責任'].reduce((n,w)=>n+(c.tail.includes(w)&&c.surfaces.some(v=>v.includes(w))?2:0),0):0;
  const relation=discourseRelation(c,p.focus),crossClause=consequenceOverlap(c.surfaces,c.tail);
  const portraitBonus=(c.fused?2.2:0)+natural+(c.bridge?8:0)+(relation==='延續所長'?2.5:0);
- return {...c,semantic:semesterSemanticSignature(c.text),warningCoverage:c.warnings?.length||0,goalCoverage:covered.filter(e=>e.kind==='goal').length,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty-parallelModal-repeatedCausative-bureaucratic-genericTail-overlap-repeatedTail-crossClause+portraitBonus-(c.variant?.35:0),relation,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:/(?:若|如|倘)能/.test(c.text),wish:/希望|期許|期待|期盼|盼望|盼能|期望/.test(c.text)};
+ return {...c,semantic:semesterSemanticSignature(c.text),warningCoverage:c.warnings?.length||0,goalCoverage:covered.filter(e=>e.kind==='goal').length,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty-parallelModal-repeatedCausative-bureaucratic-genericTail-overlap-repeatedTail-crossClause+portraitBonus-(c.variant?.35:0),relation,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:termConditionPattern.test(c.text),wish:/希望|期許|期待|期盼|盼望|盼能|期望/.test(c.text)};
 }
 function termScore(c,profile,div){
  const diversity=-(div.openings.get(c.open)||0)*.8-(div.endings.get(c.end)||0)*.6-(div.connectives.get(c.connector)||0)*.15-(div.shapes.get(c.shape)||0)*.05;
