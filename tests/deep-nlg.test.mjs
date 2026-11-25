@@ -9,3 +9,5 @@ test('class generation is unique and directly exportable without external servic
 test('alternative language uses the same plan and history validation',()=>{const current=deepDraft(scores,'經常遲到'),others=deepAlternatives(scores,'經常遲到',[],styleProfile(['待人有禮，期許能持續精進。']),current,3);assert.ok(others.length);const h=[current];for(const c of others){assert.match(c,/守時/);assert.deepEqual(validate(c,h),[]);h.push(c);}});
 
 test('short observed phrases and single adequate grade use deep realization without fallback',()=>{for(const [s,n] of [[[5,4,4,5,4,2],'熱心協助同學，但經常遲到'],[[1,2,3,2,1,2],'']]){const x=deepGenerate(s,n);assert.equal(x.source,'deep');assert.deepEqual(x.issues,[]);}});
+
+test('punctuality goals block broad daily-routine grade praise across dimensions',()=>{const s=[5,5,5,5,5,3],x=deepGenerate(s,'經常遲到');assert.equal(x.source,'deep');assert.ok(x.plan.blockedGradeDimensions.includes(0));assert.ok(x.plan.blockedGradeDimensions.includes(5));assert.ok(!x.chosenStrengths.some(e=>e.source==='等第'&&e.dimension==='日常生活表現'));assert.match(x.comment,/守時/);assert.deepEqual(x.issues,[]);});

@@ -1,5 +1,5 @@
 import {dims,complete,length,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='1.0.1';
+export const NLG_VERSION='1.0.2';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -52,28 +52,35 @@ export function planComment(scores,note='',profile={}){
  if(!evidence.complete)return {evidence,strengths:[],goals:[],focus:'評分未完成'};
  const rank=scores.map((v,dim)=>({v,dim})).sort((a,b)=>b.v-a.v||a.dim-b.dim),low=Math.min(...scores);
  const observed=[...evidence.strengths].sort(sortEvidence),observedGoals=[...evidence.goals].sort(sortEvidence);
- const allowed=rank.filter(x=>x.v>=3&&!evidence.goalDims.includes(x.dim));
+ // Cross-dimension overlap: punctuality/attendance and daily routine both
+ // support broad life-routine praise. Preserve specific observed strengths.
+ const blocked=new Set(evidence.goalDims);
+ for(const g of observedGoals){
+  if(g.dim===5&&/守時|出缺席|報備|生活規範|自我管理|事前準備|生活常規/.test(g.phrase))blocked.add(0);
+  if(g.dim===0&&/守時|集合|回座|事前準備|生活常規/.test(g.phrase))blocked.add(5);
+ }
+ const allowed=rank.filter(x=>x.v>=3&&!blocked.has(x.dim));
  const high=allowed.filter(x=>x.v>=4),pool=high.length?high:allowed;
  const strengths=[...observed,...pool.flatMap(({v,dim})=>gradePraise[dim][v-1].map(phrase=>({id:'grade-'+dim,kind:'strength',phrase,dim,source:'等第',grade:v})))];
  if(!strengths.length)strengths.push(...neutral.map(phrase=>({id:'neutral',kind:'strength',phrase,dim:-1,source:'中性'})));
  const mode=observedGoals.length?'具體成長':low>=4?'延續優勢':'等第成長';
  const goals=observedGoals.length?observedGoals:rank.filter(x=>x.v===low).map(({v,dim})=>({id:'grade-goal-'+dim,kind:'goal',phrase:mode==='延續優勢'?maintenanceGoals[dim]:gradeGuidance[dim][v-1],dim,source:'等第',grade:v}));
- return {evidence,focus:mode,strengths,goals,observed,observedGoals,low};
+ return {evidence,focus:mode,strengths,goals,observed,observedGoals,low,blockedGradeDimensions:[...blocked]};
 }
 const starts=/^(?:若能|期待能|希望能|期許能|建議|也盼|盼能)/;
 const leadList=profile=>unique([...(profile.preferred||[]).map(w=>({'若能':'若能','希望':'希望能','期許':'期許能','期待':'期待能'})[w]).filter(Boolean),'若能','期待能','希望能','期許能','盼能','也盼']);
 function outcomes(goal,focus){
  if(focus==='延續優勢')return continuation;
  const g=goal.phrase;
- if(/守時|時間|作息/.test(g))return ['讓每天的作息安排更從容','使日常生活安排更加有序','讓每天到校與各項活動的安排更加從容','從每日作息著手，逐步建立時間觀念',...genericOutcome];
- if(/專注|複習|作業|學習|請教|求助|嘗試/.test(g))return ['讓學習過程更加扎實','使自己的學習步調更加穩定',...genericOutcome];
+ if(/守時|時間|作息/.test(g))return ['讓每天的作息安排更從容','讓時間的安排更有條理，也能從容參與各項活動','使日常生活安排更加有序','讓每天到校與各項活動的安排更加從容','從每日作息著手，逐步建立時間觀念',...genericOutcome];
+ if(/專注|複習|作業|學習|請教|求助|嘗試/.test(g))return ['讓學習過程更加扎實','使自己的學習步調更加穩定','從每日學習中的小事著手，培養穩定的學習步調',...genericOutcome];
  if(/歸還|承諾|約定|據實|誠信/.test(g))return extension[4];
  if(/傾聽|溝通|應對|尊重|語氣|表達|感受/.test(g))return extension[2];
  return goal.dim>=0?[...extension[goal.dim],...genericOutcome]:genericOutcome;
 }
 function distinct(a,b){return a.phrase!==b.phrase&&a.id!==b.id&&(a.dim!==b.dim||a.dim<0||a.source==='觀察'&&b.source==='觀察')&&similarity(a.phrase,b.phrase)<=.52;}
 const splitText=s=>s.split(/[，；。！？]/).filter(Boolean);
-const repeatedWord=s=>/(日常生活|生活常規|團體生活|穩定|習慣|所長|逐步).{0,15}\1/.test(s);
+const repeatedWord=s=>/(日常生活|生活常規|團體生活|穩定|習慣|所長|逐步|良好|成熟).{0,18}\1/.test(s);
 function riskAgainst(s,history){
  let max=0;for(const h of history){max=Math.max(max,similarity(s,h));if(max>.78)break;}return max;
 }
@@ -152,8 +159,11 @@ export function deepGenerate(scores,note='',history=[],profile={}){
  if(!chosen||ranked.coverage<total){
   const fallback=draft(scores,note,history,profile),hard=validate(fallback,history);
   const fallbackCoverage=[...plan.observed,...plan.observedGoals].filter(e=>fallback.includes(e.phrase)).length;
+  // Legacy fallback may have broader grade-only praise than the new plan.
+  const opening=fallback.split(/若能|期待能|希望能|期許能|建議|盼能/)[0];
+  const crossConflict=plan.blockedGradeDimensions.includes(0)&&!plan.evidence.goalDims.includes(0)&&/日常生活表現成熟穩定|生活常規良好|生活常規的自我要求良好|日常生活常規表現良好|日常生活表現穩定|能維持良好的日常作息/.test(opening)&&!plan.observed.some(e=>opening.includes(e.phrase)&&e.dim===0);
   // Do not replace a valid candidate with a fallback that loses recognized evidence.
-  if(!hard.length&&(!chosen||fallbackCoverage>ranked.coverage))return explain(fallback,plan,'compatibility',null,history,profile);
+  if(!hard.length&&!crossConflict&&(!chosen||fallbackCoverage>ranked.coverage))return explain(fallback,plan,'compatibility',null,history,profile);
  }
  if(chosen)return explain(chosen,plan,'deep',ranked,history,profile);
  // Never hand an invalid candidate to the application as a formal comment.
