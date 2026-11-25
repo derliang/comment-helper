@@ -87,3 +87,18 @@ button.handoff-action{background:#eeeafa;color:#51417c;border-color:#d1c8e7}butt
 
 /* Make optional operations distinct from the primary editable comment. */
 .comment-actions [data-ai-help]{color:#65518e;border-color:#ded5ec;background:#f7f3fb}.comment-actions [data-generate]{background:#e9f4ef;color:#175744;font-weight:650}.comment-actions [data-copy]{margin-left:auto}.student-head:focus-visible,.filters select:focus-visible{outline:2px solid #28786a;outline-offset:2px}#list .student.open{scroll-margin-top:16px}@media(max-width:760px){.comment-actions [data-copy]{margin-left:0}.comment-actions button{min-height:36px}.comment-actions{gap:6px}.rating .legend{overflow-wrap:anywhere}}
+
+/* Narrow-screen controls use normal document flow, not an anchored flyout that can exceed the viewport. */
+@media(max-width:760px){
+ main,section#work,#list,.student,.workspace-panel,.progress-panel,.filters,.view-actions,.detail,.score-pane,.comment-pane,.preview{min-width:0;max-width:100%}
+ .filters{justify-content:flex-start}.filters select{min-width:0;max-width:100%;flex:0 1 auto}.filters input:not([type=checkbox]){min-width:0;max-width:100%}
+ .optional-ai{flex:0 1 auto;max-width:100%}.optional-ai[open]{flex:1 1 100%;width:100%}
+ .optional-ai .toolbar{position:static;min-width:0;width:100%;max-width:100%;box-shadow:none;grid-template-columns:repeat(2,minmax(0,1fr));padding:6px;gap:6px}
+ .optional-ai .toolbar button{white-space:normal;min-width:0;padding:7px 4px}
+ .stats{grid-template-columns:repeat(4,minmax(0,1fr))}.stat{min-width:0}.stats .stat{padding:8px 6px}
+ #classDialog{max-width:calc(100vw - 18px);width:calc(100vw - 18px);padding:12px}
+ #classDialog .section-heading{flex-wrap:wrap;top:-12px}
+ #classView,.matrix-scroll{min-width:0;max-width:100%}
+ .class-comment-row{grid-template-columns:minmax(0,1fr)}.class-comment-row>div,.class-comment-row textarea,.class-comment-row small{min-width:0;max-width:100%;overflow-wrap:anywhere}
+ .download-toolbar button{min-width:0;max-width:100%}.download-toolbar button span{overflow-wrap:anywhere}
+}

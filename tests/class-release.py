@@ -42,7 +42,7 @@ try:
         restore=tmp/'restore.json';restore.write_text(json.dumps(data,ensure_ascii=False),encoding='utf-8')
         page.locator('[data-tab="settings"]').click();page.locator('#restore').set_input_files(restore);page.locator('[data-tab="work"]').click()
         page.wait_for_function("document.querySelector('#commentProgressText').textContent.includes('46 / 46')",timeout=120000)
-        page.set_viewport_size({'width':375,'height':812});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1')
+        page.set_viewport_size({'width':375,'height':812});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1'),page.evaluate("""Array.from(document.querySelectorAll('body *')).filter(e=>{const b=e.getBoundingClientRect();return b.width&&b.right>innerWidth+1}).slice(0,15).map(e=>[e.tagName,e.id,e.className?.toString(),Math.round(e.getBoundingClientRect().right)])""")
         page.locator('#matrixBtn').click();expect(page.locator('.matrix tbody tr')).to_have_count(46);page.locator('#closeClassDialog').click()
         page.locator('#classEditBtn').click();expect(page.locator('[data-class-comment]')).to_have_count(46);page.locator('#closeClassDialog').click()
         assert not errors,errors
