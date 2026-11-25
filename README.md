@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v1.4.1**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v1.4.2**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，自動生成且符合硬性規範即可輸出 Excel 或 Word，不需逐筆確認；教師可自由修改。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v1.4.2 | 長期發展表述增強、重複語意降權及低等第養成語氣。 |
 | v1.4.1 | 學期人物整體描述、單次事件範圍、語意涵蓋排序與候選特徵快取。 |
 | v1.4.0 | 學期總結性 NLG 2.0：事件證據與長期發展概念分離、語意涵蓋、單次事件防護。 |
 | v1.3.2 | 候選池有限記憶體快取、歷史特徵預計算、逐字輸出效能回歸。 |
@@ -237,3 +238,7 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 ### v1.4.1
 
 降低生活常規／自律等同義肯定連列，當協助同學與班級服務等第均有支持時優先形成相關的肯定。明示本學期有一次仍屬單次，不推論長期模式。保留少量正向證據與低分發展的合規候選。多項觀察共用發展概念時依核准表述計算涵蓋。預計算候選固定特徵與有限記憶體快取，逐次依歷史及教師偏好排序。四組合成班級各46人合規不重複；非教師主觀語感驗收。
+
+### v1.4.2
+
+增加自律規範與人我調和的學期發展表述，降低相處、互動、生活、能維持等同義重複；較低等第優先基礎養成語氣，但保留能符合字數且不虛構的候選。新引擎不再調用事件式備援。四種合成班級各46人直接檢查無重複、無未涵蓋觀察；正式發布以CI為準。

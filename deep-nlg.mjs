@@ -1,5 +1,5 @@
 import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='2.0.1';
+export const NLG_VERSION='2.0.2';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -280,14 +280,14 @@ export function eventAlternatives(scores,note='',history=[],profile={},current='
 // the realization vocabulary expresses a semester-level development concept.
 const termGroups=[
  ['materials dailyPreparation','生活準備','增進生活準備與自我管理的能力','在生活安排上更有計畫與自我要求','使日常生活的準備更有條理'],
- ['attendance requestPermission rules uniform phone classNoise','生活自律與規範','在生活自律與團體規範的實踐上更加成熟','更重視生活規範與自我管理的責任','增進自我管理與遵守團體規範的自覺'],
+ ['attendance requestPermission rules uniform phone classNoise','生活自律與規範','在生活自律與團體規範的實踐上更加成熟','更重視生活規範與自我管理的責任','增進自我管理與遵守團體規範的自覺','在生活規範與自我管理上更有自我要求','在自律與團體生活中展現更成熟的態度'],
  ['punctual','時間管理','在時間安排與守時習慣上更有自我要求','增進時間管理能力並培養穩定的守時習慣','使時間安排與守時表現更加穩定','更能掌握時間，養成良好的守時習慣'],
  ['queue mealRoutine assemblyOrder returnSeat','團體秩序','在團體生活中更能自我要求並維持秩序','增進團體生活的秩序觀念與自律能力','使團體規範的實踐更加穩定'],
  ['assemblySpeed','團體配合','增進時間觀念與團體活動的配合度','在團體生活的時間安排上更加主動'],
  ['sharedSpace','公共責任','在公共環境與公物的維護上更具責任感','增進愛護公物與維護公共環境的自覺'],
  ['clean deskOrganization waste mealCleanup cleanTools cleanFinish','整潔與責任','在整潔習慣與環境維護上更加主動','增進主動整理與維護環境的習慣','培養更穩定的整潔習慣與責任感','使環境維護與整潔工作更加確實'],
  ['courtesy greeting speechTone apology','人際修養','在人際應對與待人接物上更加成熟','增進人際應對的合宜性與待人修養','在待人態度與日常應對上更有自我要求'],
- ['peers interrupt listening emotion respectBoundary','人我調和','在人我互動中多一分包容與尊重','在人際溝通與團體相處上更加成熟','增進人我調和與相互尊重的能力','在與同學相處時更能兼顧彼此的感受'],
+ ['peers interrupt listening emotion respectBoundary','人我調和','在人我互動中多一分包容與尊重','在人際溝通與團體相處上更加成熟','增進人我調和與相互尊重的能力','在與同學相處時更能兼顧彼此的感受','在團體生活中多一分包容與體諒','在尊重彼此與調和人我關係上更加成熟'],
  ['service division taskFollowthrough classEvents handover','服務與責任','在班級事務的參與及責任承擔上更加主動','增進服務的主動性與完成分內工作的責任感','使班級事務的參與與執行更加穩定'],
  ['honesty accountability reportFacts','誠信與承擔','在言行一致與責任承擔上更有自我要求','更加重視誠信與對自身言行的責任','增進言行一致與誠實面對責任的能力'],
  ['promise borrowing','承諾與信任','在履行承諾與待人誠信上更加成熟','更加重視對他人的承諾與責任','培養更穩定的守信習慣與責任感'],
@@ -322,7 +322,7 @@ const termEnd=[
 ];
 const eventWording=/(?:有臨時狀況時|先向師長說明|先聽對方說完|再表達自己的想法|記下與他人約定的時間|提早做好出門|完成後再檢查|每天留一些時間|把整理與清潔列入|上課時能將注意力|遇見師長或同學時|打聲招呼|先確認應辦|出門前先|養成事先報備的習慣|養成鐘響即回座的習慣|養成依序排隊的習慣|養成按約歸還借用物品的習慣|練習聽完再表達想法|將有助於)/;
 const harshWording=/(?:欠缺|缺乏|散漫|不守規矩|不自律|不合群|懶惰|不誠實|說謊|作弊|擅自離開|插隊|忘記打掃|經常遲到|拒絕分工|推卸責任)/;
-const isolated=/(?:今天|今日|昨天|昨日|當天|當時|那天|某次|有一次|曾有一次|單次|一次事件|這次|那次|某天|上週某天|上次|上週[一二三四五六日]|某一節|僅一次|只有一次)/;
+const isolated=/(?:今天|今日|昨天|昨日|當天|當時|那天|某次|有一次|曾有一次|單次|一次事件|這次|那次|某天|上週某天|上次|上週[一二三四五六日]|某一節|僅一次|只有一次|曾有一回|某一回)/;
 const recurrent=/(?:經常|常常|屢次|反覆|多次|每次|總是|向來|一向|平時|長期|持續|時常|頻繁|偶爾|有時)/;
 function termNotes(note){
  const retained=[],deferred=[];
@@ -405,7 +405,7 @@ function termCandidates(p,profile){
 }
 function termStatic(c,p){
  const selected=[...c.ss,...c.gg],covered=[...p.observed,...p.goals.filter(x=>x.source==='觀察')].filter(e=>selected.some(x=>x.kind===e.kind&&x.id===e.id&&x.phrase===e.phrase)||e.kind==='goal'&&c.surfaces.some(v=>e.variants?.includes(v)));
- const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
+ const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步','相處','人際','互動','能維持','人我'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
  const grade=c.ss.filter(e=>e.source==='等第').reduce((n,e)=>n+e.grade-2,0),balance=c.ss.every(x=>x.source==='中性')?0:-Math.abs(c.headLen-22)*.3,mismatch=p.focus==='延續優勢'&&c.ss.some(e=>c.gg.some(g=>g.dim===e.dim))?1:0;
  let coherence=0;
  if(c.ss.some(e=>e.source==='觀察'))for(const b of c.ss.filter(e=>e.source==='等第')){
@@ -413,9 +413,10 @@ function termStatic(c,p){
   if(b.dim===3&&c.ss.some(e=>e.dim===2&&e.source==='觀察'))coherence+=1.8;
   if(b.dim===1&&c.gg.some(e=>e.dim!==1))coherence-=1.2;
  }
- const redundantOutcome=c.tail&&(/更臻成熟|更加成熟|更為成熟/.test(c.tail)&&/更加成熟|更臻成熟/.test(c.surfaces.join('')))?1.5:0;
+ const redundantOutcome=c.tail&&(/更臻成熟|更加成熟|更為成熟/.test(c.tail)&&/更加成熟|更臻成熟/.test(c.surfaces.join('')))?2.5:0;
+ const degreePenalty=c.gg.reduce((n,e,i)=>n+(e.source==='等第'&&e.grade===1&&!/逐步|建立|基本|培養/.test(c.surfaces[i])?3:0),0);
  const repeatedDevelopment=/逐步[^。；]{0,30}逐步/.test(c.text)?4:0;
- return {...c,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:c.text.includes('若能'),wish:/希望|期許|期待|盼能/.test(c.text)};
+ return {...c,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:c.text.includes('若能'),wish:/希望|期許|期待|盼能/.test(c.text)};
 }
 function termScore(c,profile,div){
  const diversity=-(div.openings.get(c.open)||0)*.8-(div.endings.get(c.end)||0)*.6-(div.connectives.get(c.connector)||0)*.15-(div.shapes.get(c.shape)||0)*.05;
