@@ -48,3 +48,22 @@ test('rating-only portraits do not infer unobserved personality or incidents',()
  assert.match(y.comment,/個性沉靜/);
  assert.match(y.comment,/樂於協助同學/);
 });
+
+test('discourse bridge requires a selected observed strength and preserves goal coverage',()=>{
+ const note='熱心協助同學，但經常與同學爭執',x=deepGenerate(s,note);
+ assert.equal(x.quality.discourse.bridged,true);
+ assert.equal(x.quality.discourse.relation,'優勢延伸');
+ assert.match(x.comment,/延伸至/);
+ assert.deepEqual(x.coverage.missingGoals,[]);
+ assert.deepEqual(semesterCoverage(note,s,x.comment).missingGoals,[]);
+ assert.deepEqual(x.coverage.missingStrengths,[]);
+ const y=deepGenerate(s,'經常與同學爭執');
+ assert.equal(y.quality.discourse.bridged,false);
+ assert.doesNotMatch(y.comment,/將這份關懷|將助人的心意/);
+});
+test('discourse maintenance discourages repeated continuation phrases',()=>{
+ const x=deepGenerate([4,4,4,4,4,4],'個性沉穩，熱心協助同學');
+ assert.deepEqual(x.coverage.missingStrengths,[]);
+ assert.ok((x.comment.match(/持續發揮/g)||[]).length<=1,x.comment);
+ assert.deepEqual(x.issues,[]);
+});
