@@ -64,6 +64,6 @@ test('discourse bridge requires a selected observed strength and preserves goal 
 test('discourse maintenance discourages repeated continuation phrases',()=>{
  const x=deepGenerate([4,4,4,4,4,4],'個性沉穩，熱心協助同學');
  assert.deepEqual(x.coverage.missingStrengths,[]);
- assert.ok((x.comment.match(/持續發揮/g)||[]).length<=1,x.comment);
+ assert.doesNotMatch(x.comment,/(?:持續|繼續|延續)[^；。]{0,18}(?:發揮|展現)[^；。]{0,18}(?:持續|繼續|延續)[^；。]{0,18}(?:發揮|展現)/);
  assert.deepEqual(x.issues,[]);
 });

@@ -421,14 +421,14 @@ export function semesterPlan(scores,note='',profile={}){
  return p;
 }
 function termOutcomes(g,focus){
- if(focus==='延續優勢')return ['在團體生活中持續發揮所長','使良好的表現持續展現','讓各項優勢更加穩固'];
+ if(focus==='延續優勢')return [...(g.dim===3?['為班級生活帶來更多正向的力量','讓班級生活因彼此的合作而更加融洽','為班級生活帶來更多助益']:[]),'在團體生活中持續發揮所長','使良好的表現持續展現','讓各項優勢更加穩固'];
  if(g.dim>=0)return termEnd[g.dim];
  if(/學習/.test(g.label))return ['使學習表現更加穩定','讓學習與個人成長更具發展性'];
  return ['使整體表現更臻成熟','使個人的發展更加穩定'];
 }
 // A conditional expectation needs an independent consequent, not an unfinished wish.
 function termConsequences(g,focus){
- if(focus==='延續優勢')return ['相信能持續發揮所長','各項優勢將更為穩固'];
+ if(focus==='延續優勢')return [...(g.dim===3?['班級生活將因彼此的合作而更加融洽']:[]),'相信能持續發揮所長','各項優勢將更為穩固'];
  if(g.label==='時間管理')return ['時間安排將更有條理','生活步調將更加從容'];
  if(g.dim===0)return ['生活步調將更有條理','日常表現將更加穩定'];
  if(g.dim===1)return ['整潔表現將更為穩定','生活習慣將更為成熟'];
@@ -453,6 +453,7 @@ function termPool(p,profile){
  }
  const add=(head,gg,surfaces,lead,tail,sep,bridge=false)=>{
   const goal=surfaces.join('，並'),text=head.text+sep+lead+goal+(tail?'，'+tail:'')+'。',n=length(text);
+  if(p.focus==='延續優勢'&&tail&&/持續|繼續|延續/.test(goal)&&/持續|繼續|延續/.test(tail)&&/發揮|展現/.test(goal)&&/發揮|展現/.test(tail))return;
   if(n<42||n>50||out.has(text)||eventWording.test(text)||harshWording.test(text)||/能[^，；。]{0,18}更能/.test(text)||validate(text,[]).length)return;
   out.set(text,{text,ss:head.ss,gg,surfaces,form:bridge?'優勢延伸篇章':sep==='。'?'雙句學期期許':'分號學期期許',n,headLen:length(head.text),tail,fused:!!head.fused,bridge});
  };
