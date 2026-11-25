@@ -94,7 +94,7 @@ const goals=['建立穩定的生活常規','主動維持環境整潔','精進人
 export const gradeGuidance=[
  ['逐步建立基本生活常規','練習穩定的生活安排','鞏固日常生活常規','延續良好的生活習慣','持續發揮成熟表現'],
  ['逐步建立整理習慣','主動完成整潔工作','養成主動整理的習慣','延續良好整潔習慣','持續維護整潔環境'],
- ['練習有禮的應對方式','培養合宜的應對方式','精進人際應對方式','持續維持有禮的態度','延續良好的應對表現'],
+ ['逐步練習有禮的應對方式','培養合宜的應對方式','精進人際應對方式','持續維持有禮的態度','延續良好的應對表現'],
  ['逐步參與班級事務','更主動參與班級事務','增進班級服務的主動性','持續參與班級事務','持續發揮服務精神'],
  ['逐步建立言行一致的習慣','重視言行一致','持續培養誠信習慣','延續誠懇的待人態度','持續展現誠信態度'],
  ['逐步建立自我管理習慣','培養自我管理習慣','提升自我管理的穩定度','延續良好的自我管理','持續發揮自律表現']
@@ -141,14 +141,14 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
  };
  const first=specific.length?specific:starters;
  const follow=[...new Set([...specific,...ranked,...alternateStrengths,...(allStrong&&!targets.length?maintenance:development)])];
- outer:for(const a of first)for(const b of follow){if(a===b||similarity(a,b)>.52)continue;for(const g of gs)for(const l of leads)for(const e of [...goalOutcomes(g),...endings]){
+ outer:for(const a of first)for(const b of follow){if(a===b||similarity(a,b)>.52||sameRatingTheme(a,b))continue;for(const g of gs)for(const l of leads)for(const e of [...goalOutcomes(g),...endings]){
   if(consider(a+'，'+b+'，'+l+g+'，'+e+'。'))break outer;
   if(consider(a+'，'+b+'。'+l+g+'，'+e+'。'))break outer;
   if(profile.structure?.semicolon>.25&&consider(a+'，'+b+'；'+l+g+'，'+e+'。'))break outer;
  }}
  if(!best||bestKey[1]<maxPossible||bestKey[0]===0||bestKey[2]===0){
   for(const a of first)for(const b of follow)for(const g of gs)for(const l of leads){
-   if(a===b||similarity(a,b)>.52)continue;consider(a+'，'+b+'，'+l+g+'。');
+   if(a===b||similarity(a,b)>.52||sameRatingTheme(a,b))continue;consider(a+'，'+b+'，'+l+g+'。');
    for(const e of [...goalOutcomes(g),...endings])consider(a+'，'+l+g+'，'+e+'。');
   }
  }
@@ -210,4 +210,9 @@ function goalOutcomes(g){
  if(/誠信|承諾|言行/.test(g))return ['在日常相處中建立彼此的信任','讓同儕間的互信更加穩固'];
  if(/專注|複習|作業|學習|嘗試/.test(g))return ['讓學習過程更加扎實','使自己的學習步調更加穩定'];
  return ['讓日常生活安排更有條理','在日常生活中逐步養成好習慣'];
+}
+
+function sameRatingTheme(a,b){
+ const theme=s=>positive.findIndex((pair,i)=>pair.includes(s)||strengthVariations[i].flat().includes(s));
+ const x=theme(a),y=theme(b);return x>=0&&x===y;
 }

@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.9.2-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.9.3-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.9.3-beta | 全低分程度語句修正，同一評分向度的肯定不重複堆疊。 |
 | v0.9.2-beta | 本機句型與目標連貫性、全班生成驗收、匯入完整評分自動補齊、回填格式與手機操作測試。 |
 | v0.9.1-beta | 回填文字解析、座號格式容錯、重複提案檢查、備份附加資料驗證、回填測試修正。 |
 | v0.9.0-beta | AI 任務選擇、指定學生、原評語交接、批次識別與安全回填。 |
