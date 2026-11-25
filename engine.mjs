@@ -61,16 +61,16 @@ function allowedPositive(clause,re){
 }
 function allowedNegative(clause,re){
  const m=re?.exec(clause);if(!m)return false;
- return !/(?:沒有|未曾|從未|不曾|不再|沒有再|很少|並未).{0,5}$/.test(clause.slice(0,m.index));
+ return !/(?:沒有|未曾|從未|不曾|不再|沒有再|很少|並未)(?:再|經常|常常|常|容易|出現|有)?$/.test(clause.slice(0,m.index));
 }
 export function analyzeObservation(note='',scores=[],custom=[]){
- const clauses=String(note).normalize('NFKC').split(/[，,。；;、\n！!]+|但是|但|然而|不過/).map(x=>x.trim()).filter(Boolean);
+ const clauses=String(note).normalize('NFKC').split(/[，,。；;、\n！!]+|但是|但|然而|不過|而且|並且|(?=現在|目前|近期|最近)/).map(x=>x.trim()).filter(Boolean);
  const positives=[],goals=[],unknown=[],conflicts=[],goalDims=new Set(),positiveDims=new Set();
  for(const clause of clauses){
   // Old events alone do not establish a current behavior; keep them visible for manual review.
   if(/過去|以前|曾經|原本|一開始/.test(clause)&&!/(?:目前|現在|仍然|依然|本學期|近期|最近|近來)/.test(clause)){unknown.push(clause);continue;}
   let found=false;for(const r of observations){
-  const neg=allowedNegative(clause,r.negative)&&!r.neutral?.test(clause)&&!/(?:不再|已不再|不曾|從未|沒有再).{0,8}(?:放棄|遲到|拖延|分心|違規|說謊)/.test(clause)&&!(r.id==='punctual'&&r.positive?.test(clause));
+  const neg=allowedNegative(clause,r.negative)&&!r.neutral?.test(clause)&&!(r.id==='punctual'&&r.positive?.test(clause));
   const pos=allowedPositive(clause,r.positive)&&!neg&&!/(?:不|未|沒有|缺乏|無法|難以|需要|希望能).{0,3}(?:主動|熱心|專注|有禮|誠實|遵守|勇於)/.test(clause);
   if(neg&&r.goal){goals.push(r.goal);if(r.dim!==null)goalDims.add(r.dim);found=true;if(r.dim!==null&&scores[r.dim]===5)conflicts.push('補充觀察與'+dims[r.dim]+'滿分並存，請核對。');}
   else if(pos&&r.good){positives.push(r.good);if(r.dim!==null)positiveDims.add(r.dim);found=true;if(r.dim!==null&&scores[r.dim]<=2&&scores[r.dim]>=1)conflicts.push('補充觀察與'+dims[r.dim]+'低分並存，請核對。');}
@@ -135,13 +135,14 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
   const n=length(s);if(n<42||n>50||considered.has(s)||validate(s,[]).length)return false;considered.add(s);
   const coverage=[...specific,...targets].filter(x=>s.includes(x)).length;
   const cf=features(s);let risk=0;for(const h of hf){risk=Math.max(risk,compare(cf,h));if(risk===1)break;}
-  const natural=naturalQuality(s)+(ranked.some(p=>s.startsWith(p))||specific.some(p=>s.startsWith(p))||alternateStrengths.some(p=>s.startsWith(p))?1:0);const key=[risk<1?1:0,coverage,risk<=.78?1:0,natural,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
+  const natural=naturalQuality(s)+(ranked.some(p=>s.startsWith(p))||specific.some(p=>s.startsWith(p))||alternateStrengths.some(p=>s.startsWith(p))?1:0)+(development.some(p=>s.includes(p))&&(specific.length+ranked.length>=2)?-2:0);const key=[risk<=.78?1:0,coverage,risk<1?1:0,natural,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
   if(better(key,bestKey)){best=s;bestKey=key;}
   return !history.length&&!styled&&coverage===maxPossible&&n>=46&&natural>=4;
  };
  const first=specific.length?specific:starters;
+ const outcomeFor=g=>allStrong&&!targets.length?['相信這份用心能在日常生活中持續展現','也盼在團體生活中繼續發揮所長','讓這份良好的生活態度延續下去']: [...goalOutcomes(g),...endings];
  const follow=[...new Set([...specific,...ranked,...alternateStrengths,...(allStrong&&!targets.length?maintenance:development)])];
- outer:for(const a of first)for(const b of follow){if(a===b||similarity(a,b)>.52||sameRatingTheme(a,b))continue;for(const g of gs)for(const l of leads)for(const e of [...goalOutcomes(g),...endings]){
+ outer:for(const a of first)for(const b of follow){if(a===b||similarity(a,b)>.52||sameRatingTheme(a,b))continue;for(const g of gs)for(const l of leads)for(const e of outcomeFor(g)){
   if(consider(a+'，'+b+'，'+l+g+'，'+e+'。'))break outer;
   if(consider(a+'，'+b+'。'+l+g+'，'+e+'。'))break outer;
   if(profile.structure?.semicolon>.25&&consider(a+'，'+b+'；'+l+g+'，'+e+'。'))break outer;
@@ -149,7 +150,7 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
  if(!best||bestKey[1]<maxPossible||bestKey[0]===0||bestKey[2]===0){
   for(const a of first)for(const b of follow)for(const g of gs)for(const l of leads){
    if(a===b||similarity(a,b)>.52||sameRatingTheme(a,b))continue;consider(a+'，'+b+'，'+l+g+'。');
-   for(const e of [...goalOutcomes(g),...endings])consider(a+'，'+l+g+'，'+e+'。');
+   for(const e of outcomeFor(g))consider(a+'，'+l+g+'，'+e+'。');
   }
  }
  if(best)return best;
@@ -188,7 +189,7 @@ export function naturalQuality(s){
  let n=0;if(i>=8)n+=2;if(!/若能|期待|希望|期許|建議/.test(head))n++;
  if((tail.match(/若能|期待|希望|期許|建議/g)||[]).length===1)n++;
  if(!/持續持續|逐步逐步|更加更|習慣.*習慣.*習慣|生活.*生活.*生活.*生活/.test(s))n++;
- if(/更臻成熟穩定|更具穩定性|累積成長經驗|更加穩定的表現|生活安排.*生活安排/.test(s))n--;if(/日常生活.{0,12}日常生活|穩定.{0,12}穩定|習慣.{0,12}習慣/.test(s))n--;
+ if(/更臻成熟穩定|更具穩定性|累積成長經驗|更加穩定的表現|生活安排.*生活安排/.test(s))n--;if(/日常生活.{0,12}日常生活|穩定.{0,12}穩定|習慣.{0,12}習慣|機會.{0,20}機會|所長.{0,20}所長/.test(s))n-=2;
  if(/[，；]能[^，；。]{2,12}[，；]能/.test(s))n--;
  return n;
 }

@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.9.3-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.9.4-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.9.4-beta | 強化去重優先、全高分延續期待、否定範圍、例外篩選、單生 AI 交接及手機操作驗收。 |
 | v0.9.3-beta | 全低分程度語句修正，同一評分向度的肯定不重複堆疊。 |
 | v0.9.2-beta | 本機句型與目標連貫性、全班生成驗收、匯入完整評分自動補齊、回填格式與手機操作測試。 |
 | v0.9.1-beta | 回填文字解析、座號格式容錯、重複提案檢查、備份附加資料驗證、回填測試修正。 |
@@ -151,3 +152,7 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 ### v0.9.2 本機語句與驗收
 
 以評分為證據建立多種肯定表達，避免同義肯定堆疊，成長建議搭配相應的生活、整潔、互動、服務、誠信或學習結果，不再只依通用結尾；46 位混合評分的合成班級驗證字數及去重。已評分完整但無評語者，匯入、啟動、切換班級或重新啟用自動生成時會補齊。AI 選用功能收合，不干擾日常評分。瀏覽器測試加入實際 CSV、TSV、XLSX 回傳及覆核紀錄預覽。
+
+### v0.9.4
+
+本機候選優先通過歷史去重，再比較觀察涵蓋；全優良／良好且無具體待成長觀察時，期許延續優勢，而非虛構缺點。新增「評語需留意」篩選及單生 AI 協助入口，不影響自動生成和直接下載。新增手機快速評分與全班編輯驗收。
