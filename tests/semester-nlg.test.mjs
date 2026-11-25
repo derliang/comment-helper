@@ -180,3 +180,11 @@ test('style adaptation changes actual choices only inside evidence and quality b
  let changed=0;for(const note of ['待人有禮，但經常遲到','熱心協助同學，但經常與同學爭執','待人有禮，但經常遲到、忘記打掃','上課容易分心',''])for(const lead of ['若能','期許能','盼能']){const x=deepGenerate(s,note,[],{examples:examples(lead)});assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);const a=x.quality.style.adaptation;if(a.applied){changed++;assert.equal(a.selected,a.preferred);assert.ok(a.scoreCost<=6);}}assert.ok(changed>0);
  const sparse=deepGenerate(s,'經常遲到',[],{examples:examples('若能').slice(0,2)});assert.equal(sparse.quality.style.adaptation.applied,false);
 });
+
+
+test('related recurring shortcomings form one developmental paragraph, not a checklist',()=>{
+ const note='待人有禮，但經常遲到、忘記打掃',x=deepGenerate(s,note);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.equal(x.quality.warning.explicit.length,2);assert.equal(x.quality.warning.realizedClauses,1);assert.ok(x.quality.integration);assert.match(x.comment,/守時/);assert.match(x.comment,/整潔/);assert.ok(x.quality.balance.ratio>=.35);
+ const removed=x.comment.replace(/維護整潔|整潔工作|環境整潔/,'日常事務');assert.ok(semesterCoverage(note,s,removed).missingGoals.length>0);
+ const y=deepGenerate(s,'經常遲到、上課容易分心');assert.equal(y.quality.warning.realizedClauses,1);assert.deepEqual(y.coverage.missingGoals,[]);assert.match(y.comment,/學習專注/);
+ const z=deepGenerate(s,'待人有禮，但偶爾遲到、忘記打掃');assert.equal(z.quality.integration,null);assert.equal(z.quality.warning.explicit.length,1);
+});
