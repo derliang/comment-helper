@@ -1,5 +1,5 @@
-import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft,observationCoverage} from './engine.mjs';
-export const NLG_VERSION='1.0.0';
+import {dims,complete,length,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
+export const NLG_VERSION='1.0.1';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -10,7 +10,7 @@ const gradePraise=[
  [[],[],['待人誠信大致合宜','日常言行大致合宜'],['待人誠懇','能重視誠信'],['待人誠懇且言行一致','言行誠懇值得肯定']],
  [[],[],['大致能配合團體規範','自我管理已有基本表現'],['能配合團體生活規範','日常自律表現良好'],['具備良好自我管理能力','能自律並配合團體規範']]
 ];
-const neutral=['日常生活可從具體小事逐步累積','生活中的每次練習都值得重視','團體生活提供許多練習的機會','日常生活是培養良好習慣的起點'];
+const neutral=['日常生活中的每次練習都是成長的機會','日常生活可從具體小事逐步累積','生活中的每次練習都值得重視','團體生活提供許多練習的機會','日常生活是培養良好習慣的起點'];
 const extension=[
  ['從每日生活安排著手','使日常生活更有條理','讓生活步調更加從容','讓每一天的生活更加有序'],
  ['從每日整理做起','讓周遭環境更加舒適','讓良好習慣落實在日常生活中','與同學共同維護舒適的環境'],
@@ -20,7 +20,8 @@ const extension=[
  ['從每日應辦事項著手','讓日常生活安排更有條理','使自己的生活步調更加穩定','逐步養成適合自己的好習慣']
 ];
 const continuation=['讓這份用心延續在日常生活中','在團體生活中繼續發揮所長','讓良好的生活態度持續展現','將這份用心融入日常生活','相信能在團體生活中持續展現所長'];
-const genericOutcome=['讓日常表現更加穩定','在日常生活中逐步落實','從每天的小事開始練習','讓良好的習慣逐步養成'];
+const genericOutcome=['在日常生活中慢慢累積更穩定的表現','讓良好的生活習慣一步步落實在日常生活中','讓日常表現更加穩定','在日常生活中逐步落實','從每天的小事開始練習','讓良好的習慣逐步養成'];
+const maintenanceGoals=['延續良好的生活習慣','持續維護環境整潔','延續有禮的待人態度','持續發揮服務精神','持續展現誠信態度','延續良好的自我管理'];
 const unique=a=>[...new Set(a)];
 const dimensionOf=s=>dims.indexOf(s);
 const clauses=note=>String(note??'').normalize('NFKC').split(/[，,。；;、\n！!]+|但是|但|然而|不過|而且|並且|(?=現在|目前|近期|最近)/).map(s=>s.trim()).filter(Boolean);
@@ -56,7 +57,7 @@ export function planComment(scores,note='',profile={}){
  const strengths=[...observed,...pool.flatMap(({v,dim})=>gradePraise[dim][v-1].map(phrase=>({id:'grade-'+dim,kind:'strength',phrase,dim,source:'等第',grade:v})))];
  if(!strengths.length)strengths.push(...neutral.map(phrase=>({id:'neutral',kind:'strength',phrase,dim:-1,source:'中性'})));
  const mode=observedGoals.length?'具體成長':low>=4?'延續優勢':'等第成長';
- const goals=observedGoals.length?observedGoals:rank.filter(x=>x.v===low).map(({v,dim})=>({id:'grade-goal-'+dim,kind:'goal',phrase:gradeGuidance[dim][v-1],dim,source:'等第',grade:v}));
+ const goals=observedGoals.length?observedGoals:rank.filter(x=>x.v===low).map(({v,dim})=>({id:'grade-goal-'+dim,kind:'goal',phrase:mode==='延續優勢'?maintenanceGoals[dim]:gradeGuidance[dim][v-1],dim,source:'等第',grade:v}));
  return {evidence,focus:mode,strengths,goals,observed,observedGoals,low};
 }
 const starts=/^(?:若能|期待能|希望能|期許能|建議|也盼|盼能)/;
@@ -64,11 +65,11 @@ const leadList=profile=>unique([...(profile.preferred||[]).map(w=>({'若能':'�
 function outcomes(goal,focus){
  if(focus==='延續優勢')return continuation;
  const g=goal.phrase;
- if(/守時|時間|作息/.test(g))return ['讓每天的作息安排更從容','使日常生活安排更加有序',...genericOutcome];
+ if(/守時|時間|作息/.test(g))return ['讓每天的作息安排更從容','使日常生活安排更加有序','讓每天到校與各項活動的安排更加從容','從每日作息著手，逐步建立時間觀念',...genericOutcome];
  if(/專注|複習|作業|學習|請教|求助|嘗試/.test(g))return ['讓學習過程更加扎實','使自己的學習步調更加穩定',...genericOutcome];
  if(/歸還|承諾|約定|據實|誠信/.test(g))return extension[4];
  if(/傾聽|溝通|應對|尊重|語氣|表達|感受/.test(g))return extension[2];
- return goal.dim>=0?extension[goal.dim]:genericOutcome;
+ return goal.dim>=0?[...extension[goal.dim],...genericOutcome]:genericOutcome;
 }
 function distinct(a,b){return a.phrase!==b.phrase&&a.id!==b.id&&(a.dim!==b.dim||a.dim<0||a.source==='觀察'&&b.source==='觀察')&&similarity(a.phrase,b.phrase)<=.52;}
 const splitText=s=>s.split(/[，；。！？]/).filter(Boolean);
@@ -97,7 +98,7 @@ function realize(plan,profile){
   out.set(text,{text,ss,gg,form,n});
  };
  for(const a of first)for(const gg of goalGroups){
-  const g=gg.map(x=>x.phrase).join('並'),ends=outcomes(gg[0],focus);
+  const g=gg.map(x=>x.phrase).join('並'),ends=gg.length>1&&gg[0].dim!==gg[1].dim?['讓日常生活更有條理','讓這些好習慣逐步落實在生活中','從每日生活中的小事逐步做起']:outcomes(gg[0],focus);
   for(const l of leads){
    for(const end of ends){
     add(a.phrase+'，'+l+g+'，'+end+'。',[a],gg,'肯定－期許－結果');
@@ -120,22 +121,21 @@ function realize(plan,profile){
 // 7. Automatic quality ranking. Evidence coverage dominates surface style.
 // History wording is used only to assess similarity, never as evidence for a new student.
 function rankCandidate(c,plan,profile,div){
- const covered=[...plan.observed,...plan.observedGoals].filter(e=>c.text.includes(e.phrase));
+ const covered=[...plan.observed,...plan.observedGoals].filter(e=>[...c.ss,...c.gg].some(x=>x.kind===e.kind&&x.phrase===e.phrase));
  const coverage=covered.length,priority=covered.reduce((n,e)=>n+evidenceWeight(e),0);
  const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join('');
  const diversity=-(div.openings.get(parts[0])||0)*2-(div.endings.get(parts.at(-1))||0)*1.5-(div.shapes.get(shape)||0)*.12;
- const natural=3-(repeatedWord(c.text)?2:0)-(parts.some(p=>length(p)>27)?1:0)+(c.form.includes('雙句')||c.form.includes('分號') ? .2 : 0);
+ const natural=3-(repeatedWord(c.text)?2:0)-(parts.some(p=>length(p)>27)?1:0)+(c.form.includes('雙句')||c.form.includes('分號') ? .2 : 0)-(plan.focus==='延續優勢'&&/若能/.test(c.text)?1.1:0)-(c.gg.length>1&&/習慣並.{0,10}習慣/.test(c.text)?1:0);
  const strength=c.ss.reduce((n,x)=>n+(x.source==='觀察'?4:x.source==='等第'?x.grade-2:0),0);
  const goalImportance=c.gg.reduce((n,x)=>n+(x.source==='觀察'?evidenceWeight(x)/100:6-(x.grade||4)),0);
  const style=profile.model?.total||profile.structure||profile.preferred?.length?styleFit(c.text,profile):0;
  const score=natural*3+strength+goalImportance+diversity+style*2-Math.abs(c.n-46)*.3;
  return {...c,coverage,priority,natural,diversity,style,score};
 }
-const better=(a,b)=>b===undefined||a.coverage>b.coverage||a.coverage===b.coverage&&(a.priority>b.priority||a.priority===b.priority&&a.score>b.score);
 function explain(text,plan,source,ranked,history,profile){
- const chosenStrengths=plan.strengths.filter(e=>text.includes(e.phrase)).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
- const chosenGoals=plan.goals.filter(e=>text.includes(e.phrase)).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
- const missingStrengths=plan.observed.filter(e=>!text.includes(e.phrase)).map(e=>e.phrase),missingGoals=plan.observedGoals.filter(e=>!text.includes(e.phrase)).map(e=>e.phrase);
+ const chosenStrengths=(ranked?ranked.ss:plan.strengths.filter(e=>text.includes(e.phrase))).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
+ const chosenGoals=(ranked?ranked.gg:plan.goals.filter(e=>text.includes(e.phrase))).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
+ const missingStrengths=plan.observed.filter(e=>!chosenStrengths.some(x=>x.phrase===e.phrase)).map(e=>e.phrase),missingGoals=plan.observedGoals.filter(e=>!chosenGoals.some(x=>x.phrase===e.phrase)).map(e=>e.phrase);
  return {comment:text,source,characters:length(text),plan,chosenStrengths,chosenGoals,coverage:{recognized:plan.observed.length+plan.observedGoals.length,missingStrengths,missingGoals,unknown:plan.evidence.unknown.length},issues:validate(text,history),quality:{form:ranked?.form||'相容生成',natural:ranked?.natural??null,diversity:ranked?.diversity??null,style:ranked?.style??null}};
 }
 // 8. Teacher-style adaptation is driven by existing approved profile and feedback.

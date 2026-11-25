@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v1.2.0**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v1.2.1**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，自動生成且符合硬性規範即可輸出 Excel 或 Word，不需逐筆確認；教師可自由修改。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v1.2.1 | 深層短語篇章補足、多目標共同結果、維持優勢語氣、採用證據精確記錄。 |
 | v1.2.0 | 本機深層自然語言生成引擎：證據、教育決策、篇章、句型、品質排序、教師風格及全班多樣性。 |
 | v1.1.0 | 本機語意庫擴充至 67 條、局部否定／改善／衝突判斷、向度篩選、獨立回歸測試。 |
 | v1.0.0 | 原定功能結案、回填覆核防護、跨班備份識別、下載相容性及工作台最終整理；CI 通過後才發布。 |
