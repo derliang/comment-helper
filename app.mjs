@@ -10,7 +10,7 @@ const project=()=>db.projects.find(p=>p.id===db.active)||db.projects[0];const st
 function save(){try{localStorage.setItem(key,JSON.stringify(db));$('saved').textContent='✓ 已儲存於此瀏覽器';}catch{$('saved').textContent='儲存失敗，請立即備份';}}
 let toastTimer;function toast(s){$('toast').textContent=s;$('toast').style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.display='none',3500);}
 function historyFor(r){return [...db.history.map(h=>h.comment),...db.projects.flatMap(p=>p.students.filter(x=>x.id!==r.id&&x.comment).map(x=>x.comment))].filter(Boolean);}
-function profile(){return approvedStyle(adaptiveProfile(styleProfile([...db.history.map(h=>h.comment),...db.projects.flatMap(p=>p.students.filter(r=>r.confirmed).map(r=>r.comment))].filter(Boolean)),db.feedback||[]),db.styleVersions||[]);}
+function profile(){return approvedStyle(adaptiveProfile(styleProfile([...new Set([...db.history.map(h=>h.comment),...db.projects.flatMap(p=>p.students.filter(r=>r.confirmed&&(!r.aiOriginal||r.aiOriginal!==r.comment)).map(r=>r.comment)),...(db.feedback||[]).map(x=>x.final)].filter(Boolean))]),db.feedback||[]),db.styleVersions||[]);}
 function issuesFor(r){return [...validate(r.comment,historyFor(r)),...(r.aiWarnings||[]),...localHistoryWarnings(r.comment,relatedHistory(r,db.history,db.projects))];}
 function archiveFeedback(r){if(r.aiOriginal&&r.comment!==r.aiOriginal){const f={raw:r.aiOriginal,final:r.comment};if(!db.feedback.some(x=>x.raw===f.raw&&x.final===f.final))db.feedback.push(f);}}
 function star(r){let a=average(r.scores);return a===null?'':`<span class="stars" aria-label="整體表現 ${a.toFixed(1)} 分">★★★★★<span style="width:${a*20}%;color:${colors[Math.round(a)-1]}">★★★★★</span></span><span>${a.toFixed(1)}</span>`;}
