@@ -81,3 +81,23 @@ test('semantic diversity retains observed evidence even with repeated history to
  for(let i=0;i<6;i++){const x=deepGenerate(s,note,h);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.ok(x.quality.semantic.pairKey);h.push(x.comment);}
  assert.equal(new Set(h).size,6);
 });
+
+test('teacher-identified recurring weaknesses are explicitly acknowledged with a development direction',()=>{
+ for(const [note,re,count] of [
+ ['熱心協助同學，但經常與同學爭執',/相處.*(?:摩擦|改善)/,1],
+ ['待人有禮，但經常遲到',/守時|時間管理/,1],
+ ['待人有禮，但忘記打掃',/整潔/,1],
+ ['待人有禮，但擅自離開教室',/自律|規範/,1],
+ ['待人有禮，但經常遲到、忘記打掃',/守時|時間管理/,2],
+ ['待人有禮，但上課容易分心',/學習專注/,1],
+ ['待人有禮，但經常說謊',/誠信|言行一致/,1]
+ ]){
+  const x=deepGenerate(s,note);assert.deepEqual(x.issues,[],x.comment);assert.deepEqual(x.coverage.missingGoals,[],note);assert.equal(x.quality.warning.explicit.length,count,note);
+  assert.match(x.comment,re);assert.match(x.comment,/仍|有待/);assert.doesNotMatch(x.comment,/懶惰|不誠實|說謊|不守規矩|擅自離開/);
+ }
+});
+test('isolated and occasional shortcomings do not become sustained negative claims',()=>{
+ for(const note of ['待人有禮，但今天擅自離開教室','待人有禮，但偶爾遲到']){
+  const x=deepGenerate(s,note);assert.deepEqual(x.issues,[]);assert.deepEqual(x.quality.warning.explicit,[]);assert.deepEqual(x.coverage.missingWarnings,[]);
+ }
+});
