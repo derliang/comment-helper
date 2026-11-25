@@ -1,8 +1,8 @@
-# 拾語 · 教師評語小幫手（Comment Helper）
+# 智慧評語小幫手（Comment Helper）（Comment Helper）
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.4.1-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.5.0-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -77,6 +77,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.5.0-beta | 正式品牌名稱、雙欄評分工作台、進度視覺化、圖示與檔案色彩、歷史核對報告、教師風格分析及強化備份回收區檢查。 |
 | v0.4.1-beta | 非阻斷評語提醒、設定頁班級名單管理及可還原刪除、Word/Excel 代表色下載、緊湊評分表。 |
 | v0.4.0-beta | 複雜觀察轉折與進步辨識、語氣結構學習、同義主題擴充及歷史方向差異核對。 |
 | v0.3.2-beta | 五級評量準則、名單預覽、手動新增與編輯、評分復原、清單密度、全班複製、備份格式檢查。 |
@@ -118,3 +119,7 @@ v0.3.0 在模型生成之後另外發送品質審查請求，即使未同意提�
 ### 工作台與名單管理
 
 一般評語核對提醒改為預覽區內的非阻斷文字，教師按確認評語即可記錄已核對，不再重複彈出瀏覽器確認視窗。硬性字數、重複與不宜措辭檢查仍保留。設定頁可切換班級、搜尋、編輯、新增、移除及還原學生；移除保留原評分與評語於本機回收區，仍可備份。Word 採藍色、Excel 採綠色下載按鈕，完整 Excel 採淺綠並明示教師留存。
+
+### v0.5 工作台設計
+
+正式名稱為智慧評語小幫手（Comment Helper）。桌面寬螢幕採左評分、右觀察與評語的雙欄展開介面，窄螢幕維持垂直排列；班級、下載、進度、篩選與學生清單分區。所有既有按鈕、色彩量表、資料鍵及匯出格式維持相容。
