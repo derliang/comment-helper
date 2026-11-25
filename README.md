@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.2.0-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.2.1-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -77,6 +77,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.2.1-beta | 修正歷史學號核對後返回工作台未重新呈現歷史評語。 |
 | v0.2.0-beta | 標題／頁尾／分頁版號、AI 代理及獨立語意核對、教師修訂風格回饋、歷史學號連結、匯入衝突保護、評語鎖定、鍵盤／全班基準評分、完整 Excel、端到端發布閘門、固定版本靜態依賴。 |
 | v0.1.5-alpha | 真實舊版檔案相容性修正、多工作表、跨列 Word、歷史匯入去重、正式匯出前檢查。 |
 | v0.1.4-alpha | MVP 垂直清單、六向度五級色彩、整體星等、規則式生成、自動儲存、基本歷史與風格。 |
