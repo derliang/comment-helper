@@ -5,7 +5,7 @@ export const complete=s=>Array.isArray(s)&&s.length===6&&s.every(v=>Number.isInt
 export const average=s=>complete(s)?s.reduce((a,b)=>a+b,0)/6:null;
 export const normalize=s=>s.normalize('NFKC').replace(/[\p{P}\p{Z}\s]/gu,'');
 const grams=s=>new Set(Array.from({length:Math.max(0,s.length-1)},(_,i)=>s.slice(i,i+2)));const features=s=>{const n=normalize(s);return {n,g:grams(n)};};const compare=(a,b)=>{if(a.n===b.n)return 1;let shared=0;for(const v of a.g)if(b.g.has(v))shared++;return a.g.size+b.g.size?2*shared/(a.g.size+b.g.size):0;};export function similarity(a,b){return compare(features(a),features(b));}
-export function validate(s,history=[]){const issues=[];if(length(s)<42||length(s)>50)issues.push('字數須為 42–50 字');if(/不認真|散漫|不守規矩|缺乏責任感|態度差|不自律|不合群|不夠用心|再加油|要努力/.test(s))issues.push('含不宜使用的措辭');if(history.some(h=>normalize(h)===normalize(s)))issues.push('完整評語重複');else if(history.some(h=>similarity(h,s)>.78))issues.push('與既有評語高度相似，請核對');return issues;}
+export function validate(s,history=[]){const issues=[];if(length(s)<42||length(s)>50)issues.push('字數須為 42–50 字');if(/不認真|散漫|不守規矩|缺乏責任感|態度差|不自律|不合群|不夠用心|再加油|要努力|更認真|缺乏努力|不夠認真|理解力弱|學習能力不好|程度差|不積極|不用心|太自我|成績落後/.test(s))issues.push('含不宜使用的措辭');if(history.some(h=>normalize(h)===normalize(s)))issues.push('完整評語重複');else if(history.some(h=>similarity(h,s)>.78))issues.push('與既有評語高度相似，請核對');return issues;}
 
 /** Train a local character trigram distribution. Counts stay in this browser. */
 const trigrams=s=>{const n=normalize(String(s));return Array.from({length:Math.max(0,n.length-2)},(_,i)=>n.slice(i,i+3));};
@@ -19,6 +19,13 @@ export function styleProfile(samples){const text=samples.join(''),count=samples.
 
 /** Local, explicitly bounded observation parser. No inference about motivation. */
 const observations=[
+ {id:'assignmentCare',dim:null,positive:/作業.{0,3}(用心|仔細|完整)|訂正.{0,3}(認真|確實)/,good:'能仔細完成學習任務'},
+ {id:'discussion',dim:null,positive:/積極參與討論|主動參與討論|踴躍發言/,negative:/很少參與討論|不敢發言/,good:'樂於參與討論',goal:'逐步練習表達想法'},
+ {id:'materials',dim:5,negative:/忘記帶.{0,6}(課本|用品|作業)|忘帶.{0,6}(課本|用品|作業)/,goal:'養成事前整理用品的習慣'},
+ {id:'duties',dim:3,positive:/主動完成.{0,5}(公務|值日|分內工作)|值日.{0,4}(認真|負責)/,good:'能主動完成分內工作'},
+ {id:'attendance',dim:5,negative:/未報備.{0,5}(離開|離校)|翹課|無故缺課/,goal:'落實出缺席與報備規範'},
+ {id:'listeningPositive',dim:null,positive:/善於傾聽|願意聽取.{0,4}意見|尊重.{0,4}不同意見/,good:'願意傾聽不同意見'},
+
  {id:'leadership',dim:null,positive:/有領導能力|具領導能力|善於領導|帶領團隊|帶領同學/,good:'具備領導能力'},
  {id:'listening',dim:null,negative:/過於堅持己見|太堅持己見|不聽.{0,4}意見|忽略.{0,8}感受|不願聽取/,goal:'多傾聽他人的想法'},
  {id:'atmosphere',dim:null,positive:/帶動團體氣氛|帶動班級氣氛|活絡班級氣氛/,good:'能帶動團體氣氛'},
@@ -58,7 +65,69 @@ export function analyzeObservation(note='',scores=[]){
 
 const positive=[['日常生活表現成熟穩定','生活常規良好'],['主動維護環境整潔','能維持環境整潔'],['待人有禮且應對得宜','待人有禮'],['熱心投入班級事務','能盡責參與班級事務'],['待人誠懇且言行一致','待人誠懇'],['具備良好自我管理能力','能配合生活常規']];
 const goals=['建立穩定的生活常規','主動維持環境整潔','精進人際應對方式','更主動參與班級事務','重視言行一致','培養自我管理習慣'];
-export function draft(scores,note='',history=[],profile={preferred:[]}){if(!complete(scores))return '';const rank=scores.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v);const positives=rank.filter(x=>x.v>=4);const observation=analyzeObservation(note,scores);const goal=observation.goals[0]||(scores.every(v=>v===5)?'持續發揮優良表現':goals[rank[5].i]);const goalOptions=observation.goals.length||!history.length?[goal]:[...new Set([goal,...(scores.every(v=>v===5)?['持續發揮所長','延續良好的生活習慣']:rank.filter(x=>x.v===rank[5].v).map(x=>goals[x.i]))])];const ranked=positives.map(x=>positive[x.i][x.v===5?0:1]);const starters=[...new Set([...observation.positives,...ranked])];if(!starters.length)starters.push('日常生活仍有成長空間',...(history.length?['生活常規仍可逐步穩定','日常表現尚有成長空間']:[]));const endings=['日常表現將更臻成熟穩定','相信能逐步累積更穩定的表現','將有助於日常生活更加穩定','期待持續培養良好的生活習慣'];const lead=[...new Set([...(profile.preferred||[]).map(w=>({'希望':'希望能','期待':'期待能','期許':'期許能','若能':'若能','若能更':'若能'})[w]).filter(Boolean),'若能','期待能','希望能'])];const candidates=[];for(const a of observation.positives.length?observation.positives:starters)for(const b of [...starters.filter(x=>x!==a),'期待持續累積生活經驗','期盼在日常生活中逐步累積成長經驗'])for(const g of goalOptions)for(const l of lead)for(const e of endings){const s=`${a}，${b}，${l}${g}，${e}。`;if(length(s)>=42&&length(s)<=50){candidates.push(s);if(profile.structure?.semicolon>.25)candidates.push(`${a}，${b}；${l}${g}，${e}。`);}}const hf=history.map(features);let best='',risk=Infinity,fit=-Infinity;const styled=Boolean(profile.model?.total||profile.preferred?.length);for(const candidate of new Set(candidates)){const cf=features(candidate);let max=0;for(const h of hf){max=Math.max(max,compare(cf,h));if(max>risk)break;}if(max>risk)continue;const f=styled?styleFit(candidate,profile):0;if(max<risk||(max===risk&&f>fit)){best=candidate;risk=max;fit=f;}if(risk===0&&!styled)break;}if(best)return best;for(const a of starters)for(const e of ['期待日常生活表現更加穩定成熟','期待在團體生活中持續累積成長經驗','相信能逐步培養更穩定成熟的生活習慣','期待持續累積日常生活經驗與自我管理能力']){const s=`${a}，若能${goal}，${e}。`;if(length(s)>=42&&length(s)<=50)return s;}return note?draft(scores,'',history,profile):'日常生活各方面仍有成長空間，期待逐步建立穩定的生活習慣，持續累積自我管理與團體生活經驗。';}
+
+/** Five-level, evidence-constrained local generation. Rows follow dims; columns are 1–5. */
+export const gradeGuidance=[
+ ['逐步建立基本生活常規','練習穩定的生活安排','鞏固日常生活常規','延續良好的生活習慣','持續發揮成熟表現'],
+ ['逐步建立整理習慣','主動完成整潔工作','養成主動整理的習慣','延續良好整潔習慣','持續維護整潔環境'],
+ ['練習有禮的應對方式','培養合宜的應對方式','精進人際應對方式','持續維持有禮的態度','延續良好的應對表現'],
+ ['逐步參與班級事務','更主動參與班級事務','增進班級服務的主動性','持續參與班級事務','持續發揮服務精神'],
+ ['逐步建立言行一致的習慣','重視言行一致','持續培養誠信習慣','延續誠懇的待人態度','持續展現誠信態度'],
+ ['逐步建立自我管理習慣','培養自我管理習慣','提升自我管理的穩定度','延續良好的自我管理','持續發揮自律表現']
+];
+const goalAlternatives=[
+ ['從日常安排建立基本常規','循序培養生活規律','按步建立生活秩序'],
+ ['從每日整理培養整潔習慣','練習確實完成整潔工作','循序養成整理習慣'],
+ ['從日常互動練習合宜應對','逐步練習尊重他人','培養平和有禮的互動'],
+ ['從分內工作開始參與服務','循序培養班級服務習慣','練習承擔班級分內事務'],
+ ['練習履行承諾並重視誠信','從日常言行培養誠信','逐步培養負責的言行'],
+ ['從時間安排練習自我管理','逐步落實生活規範','循序培養自律習慣']
+];
+const endings=['日常表現將更臻成熟穩定','相信能逐步累積更穩定的表現','將有助於日常生活更加穩定','期待持續培養良好的生活習慣','在團體生活中逐步累積成長經驗','讓生活表現更具穩定性','將有助於建立更穩定的生活常規'];
+const development=['期待在日常生活中逐步累積成長經驗','期盼在團體生活中逐步累積成長經驗','可從日常小事逐步累積成長經驗','未來可從具體生活習慣逐步累積'];
+const maintenance=['期待在團體生活中持續展現良好表現','期盼延續良好的生活態度與習慣','期待持續發揮所長並累積成長經驗'];
+export function draft(scores,note='',history=[],profile={preferred:[]}){
+ if(!complete(scores))return '';
+ const rank=scores.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v||a.i-b.i),low=Math.min(...scores),allStrong=low>=4;
+ const observation=analyzeObservation(note,scores),specific=observation.positives,targets=observation.goals;
+ const ranked=rank.filter(x=>x.v>=4).map(x=>positive[x.i][x.v===5?0:1]);
+ const base=low===3?'日常表現大致符合基本常規':low===2?'日常生活常規仍有穩定空間':'日常生活仍需逐步建立基本常規';
+ const neutral=[base,'日常生活各方面仍有成長空間','可從日常生活累積穩定表現'];
+ const starters=[...new Set([...specific,...ranked,...(!specific.length&&!ranked.length?neutral:[])])];
+ const weakest=rank.filter(x=>x.v===low);
+ let gs=targets.length?[...targets]:weakest.map(x=>gradeGuidance[x.i][low-1]);
+ if(!targets.length&&history.length&&low<=3)gs.push(...weakest.flatMap(x=>goalAlternatives[x.i]));
+ if(!targets.length&&allStrong)gs.push('持續發揮所長','延續良好的生活習慣');
+ if(targets.length>1)gs.unshift(targets.slice(0,2).join('並'));
+ gs=[...new Set(gs)];
+ const leads=[...new Set([...(profile.preferred||[]).map(w=>({'希望':'希望能','期待':'期待能','期許':'期許能','若能':'若能','若能更':'若能'})[w]).filter(Boolean),'若能','期待能','希望能'])];
+ const hf=history.map(features),styled=Boolean(profile.model?.total||profile.preferred?.length||profile.structure);
+ let best='',bestKey=null;
+ const considered=new Set(),maxPossible=specific.length+targets.length;
+ const better=(a,b)=>!b||a.some((v,i)=>v!==b[i]&&a.slice(0,i).every((x,j)=>x===b[j])&&v>b[i]);
+ const consider=s=>{
+  const n=length(s);if(n<42||n>50||considered.has(s)||validate(s,[]).length)return false;considered.add(s);
+  const coverage=[...specific,...targets].filter(x=>s.includes(x)).length;
+  const cf=features(s);let risk=0;for(const h of hf){risk=Math.max(risk,compare(cf,h));if(risk===1)break;}
+  const key=[risk<1?1:0,coverage,risk<=.78?1:0,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
+  if(better(key,bestKey)){best=s;bestKey=key;}
+  return !history.length&&!styled&&coverage===maxPossible&&n>=46;
+ };
+ const first=specific.length?specific:starters;
+ const follow=[...new Set([...starters,...(allStrong&&!targets.length?maintenance:development)])];
+ outer:for(const a of first)for(const b of follow){if(a===b)continue;for(const g of gs)for(const l of leads)for(const e of endings){
+  if(consider(a+'，'+b+'，'+l+g+'，'+e+'。'))break outer;
+  if(profile.structure?.semicolon>.25&&consider(a+'，'+b+'；'+l+g+'，'+e+'。'))break outer;
+ }}
+ if(!best||bestKey[1]<maxPossible||bestKey[0]===0){
+  for(const a of first)for(const b of follow)for(const g of gs)for(const l of leads){
+   if(a===b)continue;consider(a+'，'+b+'，'+l+g+'。');
+   for(const e of endings)consider(a+'，'+l+g+'，'+e+'。');
+  }
+ }
+ if(best)return best;
+ return '日常生活各方面仍有成長空間，期待逐步建立穩定的生活習慣，持續累積自我管理與團體生活經驗。';
+}
 export function parseRows(rows){if(!rows.length)return [];const header=rows[0].map(x=>String(x??'').trim());const find=(...keys)=>header.findIndex(x=>keys.includes(x));const ni=find('姓名','學生姓名','name'),si=find('座號','seat'),id=find('學號','studentId');const has=ni>=0;return (has?rows.slice(1):rows).filter(r=>r.some(x=>String(x??'').trim())).map((r,i)=>({id:crypto.randomUUID(),seat:String((has?r[si]:r.length>1?r[0]:i+1)??i+1).trim()||String(i+1),name:String((has?r[ni]:r.length>1?r[1]:r[0])??'').trim(),studentId:has?String(r[id]??''):'',scores:dims.map(d=>{const v=Number(r[header.indexOf(d)]);return v>=1&&v<=5&&Number.isInteger(v)?v:null}),note:'',comment:'',rated:false,confirmed:false})).filter(r=>r.name);}
 
 /** Alternative drafts retain the same observation and rating constraints. */
