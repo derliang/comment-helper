@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v0.9.0-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v0.9.1-beta**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，經教師確認後輸出 Excel 或 Word。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v0.9.1-beta | 回填文字解析、座號格式容錯、重複提案檢查、備份附加資料驗證、回填測試修正。 |
 | v0.9.0-beta | AI 任務選擇、指定學生、原評語交接、批次識別與安全回填。 |
 | v0.8.0-beta | 自然句型、語意規則向度等第與優先序、多重觀察及全班快速評分／評語編輯。 |
 | v0.7.0-beta | 自動正式評語、自由編輯、雙進度、選用保護、語意庫管理及介面更新。 |
@@ -140,3 +141,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 ## v0.9.0 AI 選用協作
 
 指定學生、全班或未保護學生交接；支援從零生成、潤飾、覆評（不改寫）、重寫，預設潤飾目前評語。每次下載產生獨立批次代碼，學生對照及快照只留在本機，不寫入交接檔。AI 回傳 Excel、CSV、TSV 或貼上文字後，先比對批次／班級／座號／交接時資料、字數、重複與保護狀態，預覽後選擇採用。缺漏及不合格顯示原因，覆評任務只查看不覆寫。原文保留於版本紀錄。無外部網路 AI 呼叫。
+
+### v0.9.1 回填驗收修正
+
+CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字，僅在精確批次代碼匹配且座號數值一致時接受。歷史重複仍阻擋，不放寬規則以通過測試。修改回傳資料後強制重新預覽，匯入後記錄教師採用與來源。備份新增語意規則、評語歷史、交接批次的結構驗證。

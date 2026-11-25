@@ -1,5 +1,20 @@
-import {complete,validate,normalize} from './engine.mjs';
+import {complete,validate,normalize,similarity} from './engine.mjs';
 export const snapshot=r=>JSON.stringify([r.scores,r.note,r.comment,r.studentId||'']);
+// RFC 4180-style quoted CSV/TSV, preserving leading zeros and literal text.
+export function parseReturnText(text){
+ const s=String(text).replace(/^\uFEFF/,'');if(!s.trim())throw Error('沒有可讀取的資料');
+ const sep=s.split(/\r?\n/,1)[0].includes('\t')?'\t':',';
+ const rows=[];let row=[],field='',quoted=false,closed=false;
+ for(let i=0;i<s.length;i++){const c=s[i];
+  if(quoted){if(c==='"'){if(s[i+1]==='"'){field+='"';i++;}else{quoted=false;closed=true;}}else field+=c;continue;}
+  if(c===sep||c==='\n'||c==='\r'){row.push(field);field='';closed=false;if(c!==sep){rows.push(row);row=[];if(c==='\r'&&s[i+1]==='\n')i++;}continue;}
+  if(closed)throw Error('引號欄位格式錯誤');
+  if(c==='"'&&!field){quoted=true;continue;}field+=c;
+ }
+ if(quoted)throw Error('引號未結束');if(row.length||field||closed){row.push(field);rows.push(row);}
+ return rows;
+}
+const seatEquivalent=(a,b)=>a===b||(/^\d+$/.test(a)&&/^\d+$/.test(b)&&a.replace(/^0+(?=\d)/,'')===b.replace(/^0+(?=\d)/,''));
 export function parseReturnRows(rows){
  if(!Array.isArray(rows)||!rows.length)throw Error('沒有可讀取的資料');
  const header=rows[0].map(x=>String(x??'').replace(/^\uFEFF/,'').trim()),ci=header.indexOf('資料代碼'),si=header.indexOf('座號'),ti=header.indexOf('評語');
@@ -10,19 +25,19 @@ export function previewReturn(rows,batches,project,history=[]){
  const counts=new Map();for(const x of rows)counts.set(x.code,(counts.get(x.code)||0)+1);
  const proposalCounts=new Map();for(const x of rows)if(x.comment){const n=normalize(x.comment);proposalCounts.set(n,(proposalCounts.get(n)||0)+1);}
  const entries=rows.map(x=>{
-  const batch=batches.find(b=>b.mapping.some(m=>m.code===x.code)),m=batch?.mapping.find(m=>m.code===x.code),r=project.students.find(y=>y.id===m?.id);
+  const batch=batches.find(b=>Array.isArray(b.mapping)&&b.mapping.some(m=>m.code===x.code)),m=batch?.mapping.find(m=>m.code===x.code),r=project.students.find(y=>y.id===m?.id);
   const errors=[];
   if(counts.get(x.code)>1)errors.push('重複資料代碼');
   if(!batch||!m)errors.push('未知交接代碼');
   if(batch&&batch.projectId!==project.id)errors.push('非目前班級');
   if(!r)errors.push('學生不存在');
-  if(m&&x.seat!==m.seat)errors.push('座號不一致');
+  if(m&&!seatEquivalent(x.seat,m.seat))errors.push('座號不一致');
   if(r&&m&&(r.seat!==m.seat||r.name!==m.name||snapshot(r)!==m.snapshot))errors.push('交接後學生資料已變更');
   if(r?.confirmed)errors.push('評語已保護');
   if(r&&!complete(r.scores))errors.push('評分未完成');
   if(batch?.task==='review')errors.push('覆評任務不覆寫原評語');
   if(!x.comment)errors.push('無可採用評語');
-  if(x.comment&&proposalCounts.get(normalize(x.comment))>1)errors.push('回傳評語完全重複');
+  if(x.comment&&proposalCounts.get(normalize(x.comment))>1)errors.push('回傳評語完全重複');else if(x.comment&&rows.some(y=>y!==x&&y.comment&&similarity(x.comment,y.comment)>.78))errors.push('回傳評語彼此高度相似');
   if(x.comment)errors.push(...validate(x.comment,[...history,...project.students.filter(y=>y.id!==r?.id&&y.comment).map(y=>y.comment)]));
   return {...x,id:r?.id,name:r?.name||'',old:r?.comment||'',batchId:batch?.id||'',errors:[...new Set(errors)]};
  });
