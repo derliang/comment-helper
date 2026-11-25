@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v1.5.0**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v1.6.0**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，自動生成且符合硬性規範即可輸出 Excel 或 Word，不需逐筆確認；教師可自由修改。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -64,6 +64,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 | v1.4.2 | 長期發展表述增強、重複語意降權及低等第養成語氣。 |
 | v1.4.3 | NLG 2.0.3：完整條件式期許、雙重情態及近義重複防護。 |
 | v1.5.0 | NLG 2.1.0：依證據建立學期人物輪廓、融合肯定語句及自然措辭排序。 |
+| v1.6.0 | NLG 2.2.0：證據式篇章關聯、優勢延伸及跨句重複降權。 |
 | v1.4.1 | 學期人物整體描述、單次事件範圍、語意涵蓋排序與候選特徵快取。 |
 | v1.4.0 | 學期總結性 NLG 2.0：事件證據與長期發展概念分離、語意涵蓋、單次事件防護。 |
 | v1.3.2 | 候選池有限記憶體快取、歷史特徵預計算、逐字輸出效能回歸。 |
@@ -256,3 +257,8 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 - NLG 2.1.0：將既有觀察與等第整理成學生優勢／發展主題，新增有證據的融合肯定候選與自然發展措辭，降低公文式詞彙及空泛結尾順位。
 - 保留原候選、事件引擎與覆蓋檢查；不得僅憑等第推定性格或虛構事蹟。新增人物輪廓回歸測試。
 - 七組合成班級各46人共322則直接驗證；CI與真實教師驗收另行確認。UI設計未變更，僅更新版本標示。
+
+### v1.6.0
+
+- NLG 2.2.0：新增有觀察證據才可採用的優勢延伸篇章，區分基礎養成、延續所長及並列發展，跨句語意重複降權。
+- 46人混合班級及三個針對性案例直接驗證；新增兩項學期引擎回歸測試，完整CI與Pages另行驗收。UI設計未變更，僅同步版本。
