@@ -1,0 +1,5 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {dims,average,complete,draft,length,validate,similarity,parseRows,styleProfile} from '../engine.mjs';
+test('six dimensions and average',()=>{assert.equal(dims.length,6);assert.equal(average([5,4,5,4,5,1]),4);assert.equal(average([5,4,5,4,5,null]),null);assert.equal(complete([0,4,5,4,5,1]),false);});
+test('all score combinations generate within limit',()=>{for(let n=0;n<15625;n++){let x=n;const s=Array.from({length:6},()=>{let v=x%5+1;x=Math.floor(x/5);return v;});for(const note of ['','經常遲到','上課容易分心','忘記打掃']){const c=draft(s,note);assert.ok(length(c)>=42&&length(c)<=50,`${s}: ${c} ${length(c)}`);if(note.includes('遲到'))assert.ok(c.includes('守時'));}}});
+test('history and validation',()=>{const c=draft([5,5,5,5,5,5]);assert.equal(similarity(c,c),1);assert.ok(validate(c,[c]).includes('完整評語重複'));assert.ok(validate('短句').length);assert.ok(styleProfile(['期待持續成長']).preferred.includes('期待'));});
+test('roster import',()=>{const r=parseRows([['座號','姓名','整潔習慣'],['01','示範',4]]);assert.equal(r[0].scores[1],4);assert.equal(r[0].seat,'01');assert.equal(r[0].scores[0],null);});
