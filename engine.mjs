@@ -114,10 +114,12 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
  if(!complete(scores))return '';
  const rank=scores.map((v,i)=>({v,i})).sort((a,b)=>b.v-a.v||a.i-b.i),low=Math.min(...scores),allStrong=low>=4;
  const observation=analyzeObservation(note,scores,profile.semanticRules||[]),specific=observation.positives,targets=observation.goals;
- const ranked=rank.filter(x=>x.v>=4&&!observation.goalDims.includes(x.i)).map(x=>positive[x.i][x.v===5?0:1]);
+ const eligible=rank.filter(x=>x.v>=4&&!observation.goalDims.includes(x.i));
+ const ranked=eligible.map(x=>positive[x.i][x.v===5?0:1]);
+ const alternateStrengths=eligible.flatMap(x=>strengthVariations[x.i][x.v===5?0:1]);
  const base=low===3?'日常表現大致符合基本常規':'日常生活可從具體小事逐步累積';
  const neutral=[base,'日常生活中仍有發展的機會','可從日常生活累積穩定表現'];
- const starters=[...new Set([...specific,...ranked,...(!specific.length&&!ranked.length?neutral:[])])];
+ const starters=[...new Set([...specific,...ranked,...alternateStrengths,...(!specific.length&&!ranked.length?neutral:[])])];
  const weakest=rank.filter(x=>x.v===low);
  let gs=targets.length?[...targets]:weakest.map(x=>gradeGuidance[x.i][low-1]);
  if(!targets.length&&history.length&&low<=3)gs.push(...weakest.flatMap(x=>goalAlternatives[x.i]));
@@ -133,21 +135,21 @@ export function draft(scores,note='',history=[],profile={preferred:[]}){
   const n=length(s);if(n<42||n>50||considered.has(s)||validate(s,[]).length)return false;considered.add(s);
   const coverage=[...specific,...targets].filter(x=>s.includes(x)).length;
   const cf=features(s);let risk=0;for(const h of hf){risk=Math.max(risk,compare(cf,h));if(risk===1)break;}
-  const natural=naturalQuality(s);const key=[risk<1?1:0,coverage,risk<=.78?1:0,natural,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
+  const natural=naturalQuality(s)+(ranked.some(p=>s.startsWith(p))||specific.some(p=>s.startsWith(p))||alternateStrengths.some(p=>s.startsWith(p))?1:0);const key=[risk<1?1:0,coverage,risk<=.78?1:0,natural,history.length?-risk:0,n>=46?1:0,styled?styleFit(s,profile):0,-Math.abs(48-n)];
   if(better(key,bestKey)){best=s;bestKey=key;}
   return !history.length&&!styled&&coverage===maxPossible&&n>=46&&natural>=4;
  };
  const first=specific.length?specific:starters;
- const follow=[...new Set([...starters,...(allStrong&&!targets.length?maintenance:development)])];
- outer:for(const a of first)for(const b of follow){if(a===b)continue;for(const g of gs)for(const l of leads)for(const e of endings){
+ const follow=[...new Set([...specific,...ranked,...alternateStrengths,...(allStrong&&!targets.length?maintenance:development)])];
+ outer:for(const a of first)for(const b of follow){if(a===b||similarity(a,b)>.52)continue;for(const g of gs)for(const l of leads)for(const e of [...goalOutcomes(g),...endings]){
   if(consider(a+'，'+b+'，'+l+g+'，'+e+'。'))break outer;
   if(consider(a+'，'+b+'。'+l+g+'，'+e+'。'))break outer;
   if(profile.structure?.semicolon>.25&&consider(a+'，'+b+'；'+l+g+'，'+e+'。'))break outer;
  }}
  if(!best||bestKey[1]<maxPossible||bestKey[0]===0||bestKey[2]===0){
   for(const a of first)for(const b of follow)for(const g of gs)for(const l of leads){
-   if(a===b)continue;consider(a+'，'+b+'，'+l+g+'。');
-   for(const e of endings)consider(a+'，'+l+g+'，'+e+'。');
+   if(a===b||similarity(a,b)>.52)continue;consider(a+'，'+b+'，'+l+g+'。');
+   for(const e of [...goalOutcomes(g),...endings])consider(a+'，'+l+g+'，'+e+'。');
   }
  }
  if(best)return best;
@@ -186,7 +188,26 @@ export function naturalQuality(s){
  let n=0;if(i>=8)n+=2;if(!/若能|期待|希望|期許|建議/.test(head))n++;
  if((tail.match(/若能|期待|希望|期許|建議/g)||[]).length===1)n++;
  if(!/持續持續|逐步逐步|更加更|習慣.*習慣.*習慣|生活.*生活.*生活.*生活/.test(s))n++;
- if(/更臻成熟穩定|更具穩定性|累積成長經驗/.test(s))n--;
+ if(/更臻成熟穩定|更具穩定性|累積成長經驗|更加穩定的表現|生活安排.*生活安排/.test(s))n--;if(/日常生活.{0,12}日常生活|穩定.{0,12}穩定|習慣.{0,12}習慣/.test(s))n--;
  if(/[，；]能[^，；。]{2,12}[，；]能/.test(s))n--;
  return n;
+}
+
+// Rating-supported alternate wording. No specific event or personality trait is invented.
+const strengthVariations=[
+ [['日常生活表現穩定','生活常規的自我要求良好'],['能維持良好的日常作息','日常生活常規表現良好']],
+ [['整潔習慣值得肯定','能主動維持周遭整潔'],['能維持周遭環境整潔','日常整潔習慣良好']],
+ [['待人有禮，應對得體','與人互動有禮'],['與人應對有禮','待人禮節良好']],
+ [['對班級事務熱心盡責','班級服務表現值得肯定'],['班級服務態度良好','能配合班級服務工作']],
+ [['待人誠懇，重視誠信','言行誠懇值得肯定'],['待人態度誠懇','能重視誠信']],
+ [['日常自我管理表現良好','能自律並配合團體規範'],['能配合團體生活規範','日常自律表現良好']]
+];
+function goalOutcomes(g){
+ if(/守時|時間|作息/.test(g))return ['讓每天的作息安排更從容','使日常生活安排更加有序'];
+ if(/整潔|整理|打掃/.test(g))return ['使自己與同學共享舒適的生活空間','讓日常整潔工作更能落實'];
+ if(/傾聽|溝通|應對|尊重|合作/.test(g))return ['讓彼此相處更加融洽','使團體互動更加和諧'];
+ if(/班級|服務|分內/.test(g))return ['讓自己在團體中更能發揮所長','為班級生活多盡一份心力'];
+ if(/誠信|承諾|言行/.test(g))return ['在日常相處中建立彼此的信任','讓同儕間的互信更加穩固'];
+ if(/專注|複習|作業|學習|嘗試/.test(g))return ['讓學習過程更加扎實','使自己的學習步調更加穩定'];
+ return ['讓日常生活安排更有條理','在日常生活中逐步養成好習慣'];
 }
