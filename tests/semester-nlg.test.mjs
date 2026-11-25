@@ -11,3 +11,15 @@ test('term praise avoids redundant life-routine pairs and retains sparse positiv
 test('all-low, middle and excellent classes retain 46 compliant unique semester comments',()=>{for(const v of [1,3,5]){const h=[];for(let i=0;i<46;i++){const x=deepGenerate(Array(6).fill(v),'',h);assert.deepEqual(x.issues,[],v+' '+i+' '+x.comment);h.push(x.comment);}assert.equal(new Set(h).size,46);}});
 
 test('a developmental expectation does not repeat the same interpersonal conclusion',()=>{const x=deepGenerate([4,4,4,4,4,3],'熱心協助同學，但經常與同學爭執');assert.deepEqual(x.issues,[]);assert.ok((x.comment.match(/相處/g)||[]).length<=1,x.comment);assert.deepEqual(x.coverage.missingGoals,[]);});
+
+test('conditional semester advice has a complete consequence and avoids doubled modal verbs',()=>{
+ const h=[];let conditional=0;
+ for(let i=0;i<46;i++){
+  const x=deepGenerate([4,4,4,4,4,3],['熱心協助同學，但經常與同學爭執','經常遲到','忘記打掃','待人有禮，但擅自離開教室'][i%4],h);
+  assert.deepEqual(x.issues,[],x.comment);
+  assert.doesNotMatch(x.comment,/能[^，；。]{0,18}更能/);
+  if(x.comment.includes('若能')){conditional++;assert.match(x.comment,/若能[^；。]+，[^；。]*(?:將|相信)/);}
+  h.push(x.comment);
+ }
+ assert.ok(conditional>0,'conditional wording must remain available');
+});
