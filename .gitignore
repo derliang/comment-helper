@@ -5,3 +5,4 @@ node_modules/
 *backup.json
 site/
 __pycache__/
+!.env.example
