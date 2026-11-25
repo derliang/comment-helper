@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
 const s=[4,4,4,4,4,3];
 test('semester evaluation abstracts incidents into enduring developmental concepts',()=>{for(const [note,concept,re] of [['待人有禮，但擅自離開教室','生活自律與規範',/自律|自我管理/],['熱心協助同學，但經常與同學爭執','人我調和',/人我|人際|相處/],['熱心協助同學，但經常遲到','時間管理',/守時/],['熱心協助同學，但忘記打掃','整潔與責任',/整潔|環境維護/]]){const x=deepGenerate(s,note);assert.match(x.comment,re);assert.ok(x.chosenGoals.some(e=>e.concept===concept));assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.issues,[]);assert.doesNotMatch(x.comment,/先向師長說明|先聽對方說完|擅自離開|將有助於|提早做好出門/);assert.equal(x.quality.level,'學期總結性評量');}});
 test('explicit isolated incidents do not establish semester-wide defects or strengths',()=>{const p=semesterPlan([4,4,4,4,4,4],'待人有禮，但今天擅自離開教室，某次協助班級活動');assert.equal(p.deferred.length,2);assert.equal(p.focus,'延續優勢');assert.equal(p.observedGoals.length,0);assert.ok(!p.observed.some(e=>e.id==='classEvents'));const x=deepGenerate([4,4,4,4,4,4],'今天擅自離開教室');assert.equal(x.plan.focus,'延續優勢');assert.deepEqual(x.issues,[]);});
@@ -66,4 +66,18 @@ test('discourse maintenance discourages repeated continuation phrases',()=>{
  assert.deepEqual(x.coverage.missingStrengths,[]);
  assert.doesNotMatch(x.comment,/(?:持續|繼續|延續)[^；。]{0,18}(?:發揮|展現)[^；。]{0,18}(?:持續|繼續|延續)[^；。]{0,18}(?:發揮|展現)/);
  assert.deepEqual(x.issues,[]);
+});
+
+test('semantic fingerprints group paraphrases and separate affirmation from development',()=>{
+ const a=semesterSemanticSignature('待人有禮，熱心投入班級事務；期許能多體諒彼此的感受。');
+ const b=semesterSemanticSignature('與人應對合宜，能盡責參與班級事務；希望能在人際相處中多一分包容。');
+ assert.equal(a.pairKey,b.pairKey);
+ assert.equal(a.lead,'期許');assert.equal(b.lead,'希望');
+ assert.deepEqual(a.strengths,['待人相處','團體參與']);
+ assert.deepEqual(a.goals,['待人相處']);
+});
+test('semantic diversity retains observed evidence even with repeated history topics',()=>{
+ const h=[],note='熱心協助同學，但經常與同學爭執';
+ for(let i=0;i<6;i++){const x=deepGenerate(s,note,h);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.ok(x.quality.semantic.pairKey);h.push(x.comment);}
+ assert.equal(new Set(h).size,6);
 });
