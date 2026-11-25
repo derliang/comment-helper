@@ -5,7 +5,7 @@ export const complete=s=>Array.isArray(s)&&s.length===6&&s.every(v=>Number.isInt
 export const average=s=>complete(s)?s.reduce((a,b)=>a+b,0)/6:null;
 export const normalize=s=>s.normalize('NFKC').replace(/[\p{P}\p{Z}\s]/gu,'');
 const grams=s=>new Set(Array.from({length:Math.max(0,s.length-1)},(_,i)=>s.slice(i,i+2)));const features=s=>{const n=normalize(s);return {n,g:grams(n)};};const compare=(a,b)=>{if(a.n===b.n)return 1;let shared=0;for(const v of a.g)if(b.g.has(v))shared++;return a.g.size+b.g.size?2*shared/(a.g.size+b.g.size):0;};export function similarity(a,b){return compare(features(a),features(b));}
-export function validate(s,history=[]){const issues=[];if(length(s)<42||length(s)>50)issues.push('字數須為 42–50 字');if(/不認真|散漫|不守規矩|缺乏責任感|態度差|不自律|不合群|不夠用心|再加油|要努力|更認真|缺乏努力|不夠認真|理解力弱|學習能力不好|程度差|不積極|不用心|太自我|成績落後/.test(s))issues.push('含不宜使用的措辭');if(history.some(h=>normalize(h)===normalize(s)))issues.push('完整評語重複');else if(history.some(h=>similarity(h,s)>.78))issues.push('與既有評語高度相似，請核對');return issues;}
+export function validate(s,history=[]){const issues=[];if(length(s)<42||length(s)>50)issues.push('字數須為 42–50 字');if(/[\r\n\t\p{Cc}\p{Extended_Pictographic}]/u.test(s)||s.trim()!==s)issues.push('評語須為單段文字，不含表情符號或前後空白');if(/不認真|散漫|不守規矩|缺乏責任感|態度差|不自律|不合群|不夠用心|再加油|要努力|更認真|缺乏努力|不夠認真|理解力弱|學習能力不好|程度差|不積極|不用心|太自我|成績落後/.test(s))issues.push('含不宜使用的措辭');if(history.some(h=>normalize(h)===normalize(s)))issues.push('完整評語重複');else if(history.some(h=>similarity(h,s)>.78))issues.push('與既有評語高度相似，請核對');return issues;}
 
 /** Train a local character trigram distribution. Counts stay in this browser. */
 const trigrams=s=>{const n=normalize(String(s));return Array.from({length:Math.max(0,n.length-2)},(_,i)=>n.slice(i,i+3));};
@@ -35,6 +35,7 @@ const observations=[
  {id:'planning',dim:null,negative:/時間管理不佳|時間安排不當|拖延|做事缺乏規劃/,goal:'妥善規劃時間與工作'},
  {id:'teamwork',dim:null,positive:/善於合作|團隊合作良好|樂於合作/,negative:/不願合作|難以合作/,good:'樂於與人合作',goal:'練習與同伴協調合作'},
 
+ {id:'punctualImproved',dim:5,positive:/不再遲到|守時情形已有改善|遲到情形已有改善/,good:'守時情形已有改善'},
  {id:'punctual',dim:5,positive:/從不遲到|不曾遲到|沒有遲到|向來守時|十分守時|非常守時|準時到校|總是準時/,negative:/遲到|不守時/,good:'能維持守時習慣',goal:'養成守時習慣',neutral:/很少遲到|不常遲到/},
  {id:'clean',dim:1,positive:/主動.{0,5}(打掃|整理|維護整潔)|整潔表現佳|打掃認真|打掃很認真/,negative:/忘記打掃|不打掃|打掃不確實|座位凌亂|環境凌亂/,good:'主動維護環境整潔',goal:'主動完成整潔工作',neutral:/沒有忘記打掃|不曾忘記打掃/},
  {id:'service',dim:3,positive:/服務熱心|熱心服務|熱心.{0,5}班級事務|幹部.{0,8}(認真|盡責|負責)|股長.{0,8}(認真|盡責|負責)|班長.{0,8}(認真|盡責|負責)/,negative:/不願服務|逃避.{0,4}(班級|公務)|不太主動.{0,5}(服務|班級)|不主動.{0,5}(服務|班級)|不參與班級/,good:'熱心投入班級事務',goal:'更主動參與班級事務'},
@@ -50,12 +51,27 @@ const observations=[
  {id:'confidence',dim:null,negative:/缺乏自信|不夠自信|需要.{0,4}自信|不敢表達|希望.{0,4}勇於表達/,positive:/勇於表達|有自信/,good:'能主動表達想法',goal:'逐步建立自信並勇於表達'},
  {id:'study',dim:null,negative:/讀書方法.{0,4}(不佳|需調整)|需要.{0,3}複習|成績退步|成績不好|成績需提升/,positive:/成績優秀|成績很好|學習成果亮眼|成績出色/,good:'學習成果亮眼',goal:'建立規律複習習慣'}
 ];
+// Match the evidence locally; a negated or merely proposed strength is not an observed strength.
+function allowedPositive(clause,re){
+ const m=re?.exec(clause);if(!m)return false;
+ const before=clause.slice(0,m.index),near=before.slice(-10);
+ if(/(?:沒|沒有|未|不|缺乏|無法|難以|很少|不太|尚未|不具備|不擅長|無意|不願意).{0,4}$/.test(near))return false;
+ if(/(?:希望|期待|期許|建議|應該|需要|若能|如果能|可再|有待).{0,8}$/.test(near))return false;
+ return true;
+}
+function allowedNegative(clause,re){
+ const m=re?.exec(clause);if(!m)return false;
+ return !/(?:沒有|未曾|從未|不曾|不再|沒有再|很少|並未).{0,5}$/.test(clause.slice(0,m.index));
+}
 export function analyzeObservation(note='',scores=[]){
  const clauses=String(note).normalize('NFKC').split(/[，,。；;、\n！!]+|但是|但|然而|不過/).map(x=>x.trim()).filter(Boolean);
  const positives=[],goals=[],unknown=[],conflicts=[];
- for(const clause of clauses){let found=false;for(const r of observations){
-  const neg=r.negative?.test(clause)&&!r.neutral?.test(clause)&&!/(?:不再|已不再|不曾|從未|沒有再).{0,8}(?:放棄|遲到|拖延|分心|違規|說謊)/.test(clause)&&!(r.id==='punctual'&&r.positive?.test(clause));
-  const pos=r.positive?.test(clause)&&!neg&&!/(?:不|未|沒有|缺乏|無法|難以|需要|希望能).{0,3}(?:主動|熱心|專注|有禮|誠實|遵守|勇於)/.test(clause);
+ for(const clause of clauses){
+  // Old events alone do not establish a current behavior; keep them visible for manual review.
+  if(/過去|以前|曾經|原本|一開始/.test(clause)&&!/(?:目前|現在|仍然|依然|本學期|近期|最近|近來)/.test(clause)){unknown.push(clause);continue;}
+  let found=false;for(const r of observations){
+  const neg=allowedNegative(clause,r.negative)&&!r.neutral?.test(clause)&&!/(?:不再|已不再|不曾|從未|沒有再).{0,8}(?:放棄|遲到|拖延|分心|違規|說謊)/.test(clause)&&!(r.id==='punctual'&&r.positive?.test(clause));
+  const pos=allowedPositive(clause,r.positive)&&!neg&&!/(?:不|未|沒有|缺乏|無法|難以|需要|希望能).{0,3}(?:主動|熱心|專注|有禮|誠實|遵守|勇於)/.test(clause);
   if(neg&&r.goal){goals.push(r.goal);found=true;if(r.dim!==null&&scores[r.dim]===5)conflicts.push('補充觀察與'+dims[r.dim]+'滿分並存，請核對。');}
   else if(pos&&r.good){positives.push(r.good);found=true;if(r.dim!==null&&scores[r.dim]<=2&&scores[r.dim]>=1)conflicts.push('補充觀察與'+dims[r.dim]+'低分並存，請核對。');}
   else if(r.neutral?.test(clause))found=true;
