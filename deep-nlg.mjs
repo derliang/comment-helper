@@ -1,5 +1,5 @@
 import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='2.3.0';
+export const NLG_VERSION='2.4.0';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -642,7 +642,7 @@ function goalTone(e,scores,focus){
  if(e.frequency==='偶發')return '精進引導';
  return e.frequency==='反覆'||(e.dim>=0&&scores[e.dim]<=2)?'明確警醒':'委婉提醒';
 }
-const compactWarningPairs=[["守時仍須改善","養成守時習慣"],["同儕相處仍須改善","培養包容與尊重"],["互動分寸仍須調整","增進尊重與體諒"],["整潔責任仍待落實","確實完成整潔工作"],["生活自律仍須加強","尊重團體規範"],["分內責任仍須加強","確實完成班務"],["言行誠信仍須改善","培養誠信態度"],["守約表現仍須改善","重視履行承諾"],["學習專注仍須加強","培養專注習慣"],["學習責任仍待落實","培養負責態度"]];
+const compactWarningPairs=[["守時仍須改善","培養守時習慣"],["同儕相處仍須改善","培養包容與尊重"],["互動分寸仍須調整","增進尊重與體諒"],["整潔仍待加強","盡好整潔責任"],["生活自律仍須加強","尊重團體規範"],["分內責任仍須加強","確實完成班務"],["言行誠信仍須改善","培養誠信態度"],["守約表現仍須改善","重視履行承諾"],["學習專注仍須加強","培養學習專注的習慣"],["學習責任仍待落實","培養負責態度"]];
 function warningSpec(e){
  if(e.source!=='觀察'||e.time==='改善'||e.frequency==='偶發')return null;
  const r=warningRules.find(([ids,re])=>ids.split(' ').includes(e.id)&&re.test(e.evidence||''));
@@ -716,12 +716,32 @@ function termPool(p,profile){
  const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
  const groups=p.goals.map(g=>[g]);
  for(let i=0;i<Math.min(p.goals.length,6);i++)for(let j=i+1;j<Math.min(p.goals.length,6);j++){
-  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&a.dim!==b.dim)groups.push([a,b]);
+  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&(a.dim!==b.dim||a.source==='觀察'&&b.source==='觀察'))groups.push([a,b]);
  }
  const heads=[];
  for(const a of first){
   heads.push({ss:[a],text:a.phrase});
   for(const b of second)if(termDistinct(a,b)){heads.push({ss:[a,b],text:a.phrase+'，'+b.phrase});heads.push(...portraitHeads(a,b));}
+ }
+ // A third assertion is allowed only when independently supported by a distinct
+ // rubric dimension. Limit candidates to the shortest approved wording per dimension.
+ const multi=p.observedGoals.length>=2;
+ if(multi){
+  const shortByDim=new Map();
+  for(const e of p.strengths.filter(e=>e.source==='等第'&&e.grade>=3)){
+   const old=shortByDim.get(e.dim);if(!old||length(e.phrase)<length(old.phrase))shortByDim.set(e.dim,e);
+  }
+  for(const h of heads.slice()){
+   if(h.ss.length!==2||h.ss.some(e=>e.source==='中性'))continue;
+   if(h.ss[0].dim===h.ss[1].dim)continue;
+   for(const c of shortByDim.values()){
+    if(h.ss.some(e=>e.dim===c.dim||!termDistinct(e,c)))continue;
+    const text=h.text+'，'+c.phrase;
+    if(length(text)<=22)heads.push({ss:[...h.ss,c],text,fused:!!h.fused,multiOnly:true});
+    const alternative=c.grade>=4?['日常常規良好','整潔習慣良好','日常禮節合宜','班級服務良好','誠信表現良好','自律表現良好'][c.dim]:null;
+    if(alternative){const v=h.text+'，'+alternative;if(length(v)<=22)heads.push({ss:[...h.ss,c],text:v,fused:!!h.fused,multiOnly:true});}
+   }
+  }
  }
  const record=(head,gg,surfaces,lead,tail,sep,bridge=false,warnings=[],contrast='',variant=false,goalJoiner='，並',syntax='')=>{
   if(!head.ss.filter(e=>e.source==='觀察').every(e=>head.text.includes(e.phrase)))return;
@@ -735,7 +755,7 @@ function termPool(p,profile){
   if(syntax==='讓步轉折')text='雖'+head.text+'，惟'+warning+'；'+expectation;
   const n=length(text);
   // Punctuality must name the actual habit, not disappear into generic time management.
-  if(gg.some(g=>g.id==='punctual')&&!/守時/.test(warning+goal))return;
+  if(gg.some((g,i)=>{const domain=g.id==='punctual'?/守時/:g.id==='focus'?/學習專注/:null;return domain&&!domain.test((warnings.find(w=>w.id===g.id)?.text||'')+surfaces[i]);}))return;
   if(syntax&&(!warning||head.ss.some(e=>e.source==='中性')))return;
   if(p.focus==='延續優勢'&&tail&&/持續|繼續|延續/.test(goal)&&/持續|繼續|延續/.test(tail)&&/發揮|展現/.test(goal)&&/發揮|展現/.test(tail))return;
   if(n<42||n>50||out.has(text)||eventWording.test(text)||harshWording.test(text)||/能[^，；。]{0,18}更能/.test(text)||validate(text,[]).length)return;
@@ -758,6 +778,7 @@ function termPool(p,profile){
   if(lead==='若能'&&tail)for(const l of termConditionalLeads)record(head,gg,surfaces,l,tail,sep,bridge,warnings,'',true);
  };
  for(const head of heads)for(const gg of groups){
+  if(head.multiOnly&&gg.length<2)continue;
   const a=gg[0],vs=gg.length===1?a.variants.map(v=>[v]):a.variants.slice(0,2).flatMap(x=>gg[1].variants.slice(0,2).map(y=>[x,y]));
   if(gg.length===1)for(const bridge of bridgesFor(a))if(anchorFor(head,bridge))for(const v of bridge.variants)for(const l of ['期許能','期盼能','希望能','期待能']){add(head,gg,[v],l,'','；',true);add(head,gg,[v],l,'','。',true);}
   const flagged=gg.filter(g=>g.warningVariants?.length);
@@ -859,6 +880,23 @@ function semesterStructure(text){
  else if(s.split('。').length>2)form='並列雙句';
  return {form,headParts:splitText(head).map(x=>normalize(x).replace(/^(?:同時也|並且|同時|亦|也|並|且|又)(?=能)/,'')).filter(Boolean)};
 }
+// Explainable quality signals for wording, not additional claims about pupils.
+const improvementActions=[['加強',/加強|增強|強化/],['改善',/改善|改進|調整/],['培養',/培養|養成|建立/],['重視',/重視|留意|注重/],['履責',/盡好|履行|落實|承擔|完成/],['理解',/理解|體諒|包容|尊重/],['規劃',/規劃|安排|掌握/],['延續',/延續|持續|保持/]];
+const wordingTopics=s=>unique([...semesterTopics(s),...(/時間管理|時間觀念|守時|時間規劃/.test(s)?['守時與時間']:[])]);
+const sameWordingTopic=(a,b)=>wordingTopics(a).some(t=>wordingTopics(b).includes(t));
+export function semesterWordingQuality(head,warnings=[],directions=[],tail=''){
+ const warningEcho=warnings.reduce((n,w,i)=>{
+  const v=directions[i]||'',a=improvementActions.find(([,re])=>re.test(w))?.[0],b=improvementActions.find(([,re])=>re.test(v))?.[0];
+  // Required concepts can recur; only the same action plus same topic is redundant.
+  return n+Number(!!a&&a===b&&sameWordingTopic(w,v));
+ },0);
+ const modalCount=String(head||'').split('，').filter(t=>/^(?:也|亦|並且|並|且|又|同時也|同時)?能/.test(t)).length;
+ const stacked=(String(head||'').match(/(?:並且|同時)能[^，；。]{0,10}(?:並|同時)/g)||[]).length;
+ const tailEcho=tail?improvementActions.filter(([,re])=>re.test(tail)&&directions.some(v=>re.test(v)&&sameWordingTopic(tail,v))).length:0;
+ const repeatedAction=directions.length>1?Number(improvementActions.some(([,re])=>directions.every(v=>re.test(v)))):0;
+ const penalty=Math.min(12,warningEcho*3.8+Math.max(0,modalCount-1)*2.4+stacked*2+tailEcho*1.2+repeatedAction*1.4);
+ return {warningEcho,modalCount,stacked,tailEcho,repeatedAction,penalty};
+}
 function termStatic(c,p){
  const selected=[...c.ss,...c.gg],covered=[...p.observed,...p.goals.filter(x=>x.source==='觀察')].filter(e=>selected.some(x=>x.kind===e.kind&&x.id===e.id&&x.phrase===e.phrase)||e.kind==='goal'&&c.surfaces.some(v=>e.variants?.includes(v)||c.bridge&&bridgesFor(e).some(b=>b.variants.includes(v))));
  const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步','相處','人際','互動','能維持','人我','整潔','規範','言行','守時','承擔','主動','學習'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
@@ -879,10 +917,10 @@ function termStatic(c,p){
  const natural=c.surfaces.reduce((n,v,i)=>n+((naturalGoals.get(c.gg[i].label)||[]).includes(v)||c.gg[i].source==='等第'&&naturalGrade[c.gg[i].dim]?.includes(v)?2.6:0),0);
  const overlap=c.ss.filter(e=>e.source==='等第'&&[0,5].includes(e.dim)&&c.gg.some(g=>g.source==='等第'&&[0,5].includes(g.dim)&&p.focus!=='延續優勢')).length*2;
  const repeatedTail=c.tail?['時間安排','持續','發揮','團體','用心','守時','整潔','相處','責任'].reduce((n,w)=>n+(c.tail.includes(w)&&c.surfaces.some(v=>v.includes(w))?2:0),0):0;
- const relation=discourseRelation(c,p.focus),crossClause=consequenceOverlap(c.surfaces,c.tail),composition=semesterBalance(c,p),structure=semesterStructure(c.text);
+ const relation=discourseRelation(c,p.focus),crossClause=consequenceOverlap(c.surfaces,c.tail),composition=semesterBalance(c,p),structure=semesterStructure(c.text),wording=semesterWordingQuality(c.headText,c.gg.map(g=>c.warnings?.find(w=>w.id===g.id)?.text||''),c.surfaces,c.tail);
  const toneFit=(c.warnings||[]).reduce((n,w)=>{const g=c.gg.find(g=>g.id===w.id);return n+(g?.tone===warningToneOf(w.text)?3.2:0);},0);
  const portraitBonus=(c.fused?2.2:0)+natural+(c.bridge?8:0)+(relation==='延續所長'?2.5:0)+toneFit;
- return {...c,composition,structure,semantic:semesterSemanticSignature(c.text),warningCoverage:c.warnings?.length||0,goalCoverage:covered.filter(e=>e.kind==='goal').length,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty-parallelModal-repeatedCausative-bureaucratic-genericTail-overlap-repeatedTail-crossClause+portraitBonus-composition.penalty-(c.variant?.35:0),relation,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:termConditionPattern.test(c.text),wish:/希望|期許|期待|期盼|盼望|盼能|期望/.test(c.text)};
+ return {...c,composition,structure,wording,semantic:semesterSemanticSignature(c.text),warningCoverage:c.warnings?.length||0,goalCoverage:covered.filter(e=>e.kind==='goal').length,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty-parallelModal-repeatedCausative-bureaucratic-genericTail-overlap-repeatedTail-crossClause+portraitBonus-composition.penalty-wording.penalty-(c.variant?.35:0),relation,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:termConditionPattern.test(c.text),wish:/希望|期許|期待|期盼|盼望|盼能|期望/.test(c.text)};
 }
 function termScore(c,profile,div){
  const diversity=-(div.openings.get(c.open)||0)*.8-(div.endings.get(c.end)||0)*.6-(div.connectives.get(c.connector)||0)*.15-(div.shapes.get(c.shape)||0)*.05;
@@ -906,7 +944,7 @@ export function deepGenerate(scores,note='',history=[],profile={}){
  const coverage=semesterCoverage(note,scores,comment,profile.semanticRules||[]);
  const chosenStrengths=(best?.ss||[]).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
  const chosenGoals=(best?.gg||[]).map((e,i)=>({phrase:best.surfaces[i],canonical:e.phrase,concept:e.label,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
- return {comment,source:best?'deep':'unavailable',characters:length(comment),plan:p,chosenStrengths,chosenGoals,coverage:{...coverage,unknown:p.evidence.unknown.length},issues:best?validate(comment,history):['暫無符合學期評量及字數去重規範的候選評語'],quality:{level:'學期總結性評量',evidence:best?{strengths:best.ss.map(e=>({source:e.source,dimension:e.dim,grade:e.grade??null,concept:e.id,canonical:e.phrase})),blockedGradeDimensions:p.blockedGradeDimensions||[],unresolved:p.evidence.unknown.length}:null,form:best?.form||'',syntax:best?.syntax||'',balance:best?.composition||null,tone:best?best.gg.map(g=>({concept:g.label,target:g.tone,realized:best.warnings?.find(w=>w.id===g.id)?warningToneOf(best.warnings.find(w=>w.id===g.id).text):g.tone})):[],action:'',connective:connectiveFamily(comment),learnedSamples:profile.discourse?.samples||0,openingLength:best?.headLen||0,portrait:best?{fused:best.fused,strengthThemes:unique(best.ss.filter(e=>e.source!=='中性').map(portraitTheme)),growthThemes:unique(best.gg.map(portraitTheme))}:null,discourse:best?{relation:best.relation,bridged:best.bridge,crossClauseOverlap:consequenceOverlap(best.surfaces,best.tail)}:null,warning:best?{explicit:best.warnings||[],missing:coverage.missingWarnings||[]}:null,semantic:best?{...best.semantic,historyPenalty:semanticDiversityPenalty(best.semantic,div)}:null}};
+ return {comment,source:best?'deep':'unavailable',characters:length(comment),plan:p,chosenStrengths,chosenGoals,coverage:{...coverage,unknown:p.evidence.unknown.length},issues:best?validate(comment,history):['暫無符合學期評量及字數去重規範的候選評語'],quality:{level:'學期總結性評量',evidence:best?{strengths:best.ss.map(e=>({source:e.source,dimension:e.dim,grade:e.grade??null,concept:e.id,canonical:e.phrase})),blockedGradeDimensions:p.blockedGradeDimensions||[],unresolved:p.evidence.unknown.length}:null,form:best?.form||'',syntax:best?.syntax||'',balance:best?.composition||null,wording:best?.wording||null,tone:best?best.gg.map(g=>({concept:g.label,target:g.tone,realized:best.warnings?.find(w=>w.id===g.id)?warningToneOf(best.warnings.find(w=>w.id===g.id).text):g.tone})):[],action:'',connective:connectiveFamily(comment),learnedSamples:profile.discourse?.samples||0,openingLength:best?.headLen||0,portrait:best?{fused:best.fused,strengthThemes:unique(best.ss.filter(e=>e.source!=='中性').map(portraitTheme)),growthThemes:unique(best.gg.map(portraitTheme))}:null,discourse:best?{relation:best.relation,bridged:best.bridge,crossClauseOverlap:consequenceOverlap(best.surfaces,best.tail)}:null,warning:best?{explicit:best.warnings||[],missing:coverage.missingWarnings||[]}:null,semantic:best?{...best.semantic,historyPenalty:semanticDiversityPenalty(best.semantic,div)}:null}};
 }
 export const deepDraft=(scores,note='',history=[],profile={})=>deepGenerate(scores,note,history,profile).comment;
 export function deepAlternatives(scores,note='',history=[],profile={},current='',limit=3){
