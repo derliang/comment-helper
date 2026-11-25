@@ -173,3 +173,10 @@ test('local style learning uses structural categories only and requires enough i
  const p={examples:['增進自律','培養習慣','改善作息','重視規範','加強整潔','學習規劃'].map(v=>'擅長雕塑，具藝術創意；期許能'+v+'，使整體表現更好。')};
  const x=deepGenerate(s,'待人有禮，但經常遲到',[],p);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.match(x.comment,/守時/);assert.doesNotMatch(x.comment,/雕塑|藝術創意/);assert.equal(x.quality.style.samples,6);
 });
+
+
+test('style adaptation changes actual choices only inside evidence and quality bounds',()=>{
+ const examples=lead=>['培養自律習慣','增進時間觀念','加強整潔責任','重視團體規範','增進溝通能力','培養負責態度'].map(v=>'生活常規良好，待人有禮；'+lead+v+'，使日常表現更加穩定。');
+ let changed=0;for(const note of ['待人有禮，但經常遲到','熱心協助同學，但經常與同學爭執','待人有禮，但經常遲到、忘記打掃','上課容易分心',''])for(const lead of ['若能','期許能','盼能']){const x=deepGenerate(s,note,[],{examples:examples(lead)});assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);const a=x.quality.style.adaptation;if(a.applied){changed++;assert.equal(a.selected,a.preferred);assert.ok(a.scoreCost<=6);}}assert.ok(changed>0);
+ const sparse=deepGenerate(s,'經常遲到',[],{examples:examples('若能').slice(0,2)});assert.equal(sparse.quality.style.adaptation.applied,false);
+});
