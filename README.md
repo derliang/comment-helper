@@ -55,7 +55,7 @@ python -m playwright install --with-deps chromium
 python tests/browser-smoke.py
 ```
 
-GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建置 → Chromium 瀏覽器驗收 → Pages artifact → 部署。伺服器程式與測試檔不納入發布套件。版本常數在 `advanced.mjs`；升級時同步更新 HTML、README 與測試。
+GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建置 → Chromium 瀏覽器驗收 → Pages artifact → 部署。伺服器程式與測試檔不納入發布套件。版本常數在 `advanced.mjs`；升級時同步更新 HTML、README 與測試。建置時 `scripts/write-version-json.mjs` 會產生 `site/version.json`（版本數字、通道如 beta、發布日＝首次寫入該版號的 commit 之台灣日期），Teacher Hub 工具站每 3 小時讀取它更新卡片版本；CI 需完整歷史（`fetch-depth: 0`），淺層 clone 會直接中止建置。
 
 ## 版本紀錄
 
