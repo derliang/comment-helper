@@ -1,5 +1,5 @@
-import {dims,complete,length,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='1.1.1';
+import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
+export const NLG_VERSION='1.1.2';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -126,8 +126,13 @@ function outcomes(goal,focus){
 function distinct(a,b){return a.phrase!==b.phrase&&a.id!==b.id&&(a.dim!==b.dim||a.dim<0||a.source==='觀察'&&b.source==='觀察')&&similarity(a.phrase,b.phrase)<=.52;}
 const splitText=s=>s.split(/[，；。！？]/).filter(Boolean);
 const repeatedWord=s=>/(日常生活|生活常規|團體生活|穩定|習慣|所長|逐步|良好|成熟).{0,18}\1/.test(s);
+// Exactly the same normalization and bigram Dice calculation as engine.validate.
+function similarityFeatures(s){const n=normalize(s);return {n,g:new Set(Array.from({length:Math.max(0,n.length-1)},(_,i)=>n.slice(i,i+2)))};}
 function riskAgainst(s,history){
- let max=0;for(const h of history){max=Math.max(max,similarity(s,h));if(max>.78)break;}return max;
+ const a=similarityFeatures(s);let max=0;
+ for(const b of history){if(a.n===b.n)return 1;let shared=0;for(const g of a.g)if(b.g.has(g))shared++;
+  max=Math.max(max,a.g.size+b.g.size?2*shared/(a.g.size+b.g.size):0);if(max>.78)break;
+ }return max;
 }
 function diversityIndex(history){
  const openings=new Map(),endings=new Map(),shapes=new Map(),connectives=new Map();
@@ -164,6 +169,7 @@ function realize(plan,profile){
   if(validate(text,[]).length||starts.test(text)||/(?:若能|希望能|期許能|期待能|盼能)(?:有臨時狀況時|遇到[^，。；]{1,12}時|遇見[^，。；]{1,12}時|上課時|出門前|完成工作後|完成後)|逐步逐步|能能|養成養成|每天，/.test(text))return;
   out.set(text,{text,ss,gg,form,n,action,actionSurface});
  };
+ const compatible=new Map(first.map(a=>[a,second.filter(b=>distinct(a,b))]));
  for(const a of first)for(const gg of goalGroups){
   const g=gg.map(x=>x.phrase).join('並'),ends=gg.length>1&&gg[0].dim!==gg[1].dim?['讓日常生活更有條理','讓這些好習慣逐步落實在生活中','從每日生活中的小事逐步做起']:outcomes(gg[0],focus);
   for(const l of leads){
@@ -174,7 +180,7 @@ function realize(plan,profile){
      for(const {text:t,surface} of realizeAdvice(l,action,g)){
       add(a.phrase+'；'+t+'。',[a],gg,'肯定－具體行動－期許',action,surface);
       add(a.phrase+'。'+t+'。',[a],gg,'雙句具體行動',action,surface);
-      for(const b of second){if(distinct(a,b))add(a.phrase+'，'+b.phrase+'；'+t+'。',[a,b],gg,'雙肯定－具體行動',action,surface);}
+      for(const b of compatible.get(a)){add(a.phrase+'，'+b.phrase+'；'+t+'。',[a,b],gg,'雙肯定－具體行動',action,surface);}
      }
     }
    }
@@ -183,7 +189,7 @@ function realize(plan,profile){
     add(a.phrase+'。'+l+g+'，'+end+'。',[a],gg,'雙句銜接');
     add(a.phrase+'；'+l+g+'，'+end+'。',[a],gg,'分號銜接');
    }
-   for(const b of second){if(!distinct(a,b))continue;
+   for(const b of compatible.get(a)){
     const head=a.phrase+'，'+b.phrase;
     add(head+'；'+l+g+'。',[a,b],gg,'雙肯定－期許');
     add(head+'。'+l+g+'。',[a,b],gg,'雙肯定－雙句');
@@ -195,6 +201,20 @@ function realize(plan,profile){
   }
  }
  return [...out.values()];
+}
+// A small RAM-only LRU of candidate pools for repeated equivalent plans.
+// Retain only canonical slot fields, never the original observation, history,
+// identity or complete teacher profile. History ranking is always recomputed.
+const poolCache=new Map();
+const slot=e=>({id:e.id,kind:e.kind,phrase:e.phrase,dim:e.dim,source:e.source,grade:e.grade,frequency:e.frequency,time:e.time,priority:e.priority});
+export function clearCandidateCache(){poolCache.clear();}
+function candidatePool(plan,profile){
+ const slim={focus:plan.focus,strengths:plan.strengths.map(slot),goals:plan.goals.map(slot),observed:plan.observed.map(slot),observedGoals:plan.observedGoals.map(slot)};
+ const key=JSON.stringify([slim,leadList(profile)]);
+ if(poolCache.has(key)){const value=poolCache.get(key);poolCache.delete(key);poolCache.set(key,value);return value;}
+ const value=realize(slim,profile);
+ if(key.length<=12000&&value.length<=5000){poolCache.set(key,value);while(poolCache.size>6)poolCache.delete(poolCache.keys().next().value);}
+ return value;
 }
 // 7. Automatic quality ranking. Evidence coverage dominates surface style.
 // History wording is used only to assess similarity, never as evidence for a new student.
@@ -229,11 +249,11 @@ function explain(text,plan,source,ranked,history,profile){
 export function deepGenerate(scores,note='',history=[],profile={}){
  const plan=planComment(scores,note,profile);
  if(!plan.evidence.complete)return {comment:'',source:'incomplete',characters:0,plan,chosenStrengths:[],chosenGoals:[],issues:['評分未完成'],coverage:{recognized:0,missingStrengths:[],missingGoals:[],unknown:0},quality:{}};
- const div=diversityIndex(history);
- const candidates=realize(plan,profile).map(c=>rankCandidate(c,plan,profile,div)).sort((a,b)=>b.coverage-a.coverage||b.priority-a.priority||b.score-a.score);
+ const div=diversityIndex(history),historyFeatures=history.map(similarityFeatures);
+ const candidates=candidatePool(plan,profile).map(c=>rankCandidate(c,plan,profile,div)).sort((a,b)=>b.coverage-a.coverage||b.priority-a.priority||b.score-a.score);
  let chosen,ranked;
  // Search ranked candidates; avoid excessive history comparisons, with fallback below.
- for(const c of candidates.slice(0,900)){if(riskAgainst(c.text,history)>.78)continue;chosen=c.text;ranked=c;break;}
+ for(const c of candidates.slice(0,900)){if(riskAgainst(c.text,historyFeatures)>.78)continue;chosen=c.text;ranked=c;break;}
  const total=plan.observed.length+plan.observedGoals.length;
  if(!chosen||ranked.coverage<total){
   const fallback=draft(scores,note,history,profile),hard=validate(fallback,history);

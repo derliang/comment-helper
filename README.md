@@ -2,7 +2,7 @@
 
 [![CI and Pages](https://github.com/derliang/comment-helper/actions/workflows/ci.yml/badge.svg)](https://github.com/derliang/comment-helper/actions/workflows/ci.yml)
 
-**版本：v1.3.1**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
+**版本：v1.3.2**　｜　[開啟評語工作台](https://derliang.github.io/comment-helper/)　｜　[查看發布紀錄](https://github.com/derliang/comment-helper/actions)
 
 以國高中導師期末評語工作為核心：快速匯入班級名單，評量學生的日常表現，生成 42～50 字（含標點）的發展性評語，自動生成且符合硬性規範即可輸出 Excel 或 Word，不需逐筆確認；教師可自由修改。網頁本身可由 GitHub Pages 提供，不必先架設伺服器。預設在瀏覽器內運作，不需要 AI API 金鑰。
 
@@ -61,6 +61,7 @@ GitHub Pages 以 Actions 為來源；`main` push → Node 測試 → 靜態建�
 
 | 版本 | 更新內容 |
 | --- | --- |
+| v1.3.2 | 候選池有限記憶體快取、歷史特徵預計算、逐字輸出效能回歸。 |
 | v1.3.1 | 時間修飾語句法、具體主題行動、期許連接多樣性、已涵蓋觀察免多餘警示。 |
 | v1.3.0 | 具體改善方法與因果篇章、人工修訂篇章偏好、通用結尾抑制及對照驗收。 |
 | v1.2.2 | 跨向度語意衝突約束、詞語重複抑制及新引擎版本追蹤。 |
@@ -222,3 +223,7 @@ CSV/TSV 以文字解析保留前導零及引號；Excel 若將座號轉為數字
 ### v1.3.1
 
 區分情境修飾語與行動，改善「若能有臨時狀況時」類不自然的句法；擴充問候、道歉及界線主題的對應建議。對常見制式連接詞加以降權，並參考全班期許連接方式分布。多項成長方向已完整寫入時不再一律顯示核對提示；只提示未涵蓋的實際方向。原規則、正式評語與自訂設定保留。
+
+### v1.3.2
+
+相同篇章計畫重用有限的記憶體候選池，候選只保留標準化語意槽位，不保留原始觀察、學生身分、歷史評語或教師完整風格。每次仍重新依歷史與風格排序，還原時清空快取。預計算歷史正規化雙字特徵，維持0.78及原始去重定義。46人混合與18人含教師風格對照逐字不變。時間為本次執行環境測量，不是手機實測。
