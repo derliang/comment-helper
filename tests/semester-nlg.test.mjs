@@ -101,3 +101,20 @@ test('isolated and occasional shortcomings do not become sustained negative clai
   const x=deepGenerate(s,note);assert.deepEqual(x.issues,[]);assert.deepEqual(x.quality.warning.explicit,[]);assert.deepEqual(x.coverage.missingWarnings,[]);
  }
 });
+
+test('typed connective variants retain semantic warning, goal and observation coverage',()=>{
+ const h=[],note='熱心協助同學，但經常與同學爭執',leads=new Set(),transitions=new Set();
+ for(let i=0;i<12;i++){
+  const x=deepGenerate(s,note,h),sig=semesterSemanticSignature(x.comment);
+  assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.deepEqual(x.coverage.missingGoals,[]);
+  assert.equal(x.quality.warning.explicit.length,1);
+  if(/(?:若|如|倘)能/.test(x.comment))assert.match(x.comment,/(?:若|如|倘)能[^；。]+，[^；。]*(?:將|相信)/);
+  leads.add(sig.lead);transitions.add(sig.transition);h.push(x.comment);
+ }
+ assert.equal(new Set(h).size,12);assert.ok(leads.size+transitions.size>=6);
+});
+test('semantic fingerprints recognize connective variants and keep warning separate from affirmation',()=>{
+ const a=semesterSemanticSignature('待人有禮，也能用心完成班級事務；但守時習慣仍不穩定，期盼今後能培養守時的習慣。');
+ assert.equal(a.lead,'期盼今後');assert.equal(a.transition,'但');assert.equal(a.addition,'也能');
+ assert.ok(a.goals.includes('生活條理'));assert.ok(!a.strengths.includes('生活條理'));
+});
