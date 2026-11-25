@@ -1,5 +1,5 @@
 import {dims,complete,length,normalize,validate,similarity,styleFit,gradeGuidance,analyzeObservation,builtinSemanticRules,validSemanticRule,draft} from './engine.mjs';
-export const NLG_VERSION='2.0.0';
+export const NLG_VERSION='2.0.1';
 
 // Only these rated descriptions may be inferred from a score. No invented incident.
 const gradePraise=[
@@ -295,7 +295,8 @@ const termGroups=[
  ['reminders initiative','主動與責任','在日常事務與責任承擔上更加主動','增進處事的主動性與自我管理能力','培養主動負責的態度與穩定的生活習慣'],
  ['priorities selfCheck planning','處事與規劃','在時間規劃與處事條理上更加成熟','增進生活規劃與自我檢核的能力','使處事更有條理，日常表現更加穩定'],
  ['focus','學習專注','在學習專注與自我管理上更有自我要求','增進學習專注的穩定度與持續性','使學習過程更為專注而穩定'],
- ['work study','學習習慣','在學習安排與規律複習上更有自我要求','培養穩定而有條理的學習習慣','增進學習規劃與自我管理的能力'],
+ ['work','學習責任','在學習安排與作業完成上更有自我要求','使學習責任的實踐更加穩定','培養有條理的學習安排與作業習慣'],
+ ['study','學習習慣','在學習安排與規律複習上更有自我要求','培養穩定而有條理的學習習慣','增進學習規劃與自我管理的能力'],
  ['confidence discussion askHelp','表達與學習','在表達想法與學習參與上更加主動','增進表達與主動請益的能力','在團體互動與學習中更勇於表達想法'],
  ['teamwork','合作與調和','增進與人合作及協調的能力','在團體合作中更能調和彼此的想法'],
  ['persistence','持續學習','在面對學習挑戰時更能持續探索與嘗試','培養穩定而持續的學習態度'],
@@ -321,8 +322,8 @@ const termEnd=[
 ];
 const eventWording=/(?:有臨時狀況時|先向師長說明|先聽對方說完|再表達自己的想法|記下與他人約定的時間|提早做好出門|完成後再檢查|每天留一些時間|把整理與清潔列入|上課時能將注意力|遇見師長或同學時|打聲招呼|先確認應辦|出門前先|養成事先報備的習慣|養成鐘響即回座的習慣|養成依序排隊的習慣|養成按約歸還借用物品的習慣|練習聽完再表達想法|將有助於)/;
 const harshWording=/(?:欠缺|缺乏|散漫|不守規矩|不自律|不合群|懶惰|不誠實|說謊|作弊|擅自離開|插隊|忘記打掃|經常遲到|拒絕分工|推卸責任)/;
-const isolated=/(?:今天|今日|昨天|昨日|當天|當時|那天|某次|有一次|曾有一次|單次|一次事件|這次|那次|某天|上週某天|上次)/;
-const recurrent=/(?:經常|常常|屢次|反覆|多次|每次|總是|向來|一向|平時|長期|本學期|持續|時常|頻繁)/;
+const isolated=/(?:今天|今日|昨天|昨日|當天|當時|那天|某次|有一次|曾有一次|單次|一次事件|這次|那次|某天|上週某天|上次|上週[一二三四五六日]|某一節|僅一次|只有一次)/;
+const recurrent=/(?:經常|常常|屢次|反覆|多次|每次|總是|向來|一向|平時|長期|持續|時常|頻繁|偶爾|有時)/;
 function termNotes(note){
  const retained=[],deferred=[];
  for(const c of clauses(note)){
@@ -333,7 +334,7 @@ function termNotes(note){
 }
 function termGoal(e,focus){
  if(e.source==='等第'){
-  const vs=focus==='延續優勢'?[e.phrase,...(e.dim===3?['延續對班級事務的用心','持續在團體中發揮服務精神']:e.dim===5?['持續展現自律與自我要求','延續成熟的生活態度']:['持續保持這份良好的表現','延續這份用心與自我要求'])]:unique([e.phrase,termGrade[e.dim][Math.max(0,Math.min(2,e.grade-1))],...termGrade[e.dim].slice(1)]);
+  const vs=focus==='延續優勢'?[e.phrase,...(e.dim===3?['延續對班級事務的用心','持續在團體中發揮服務精神']:e.dim===5?['持續展現自律與自我要求','延續成熟的生活態度']:['持續保持這份良好的表現','延續這份用心與自我要求'])]:unique([e.phrase,termGrade[e.dim][Math.max(0,Math.min(2,e.grade-1))],...termGrade[e.dim].slice(1),...(e.grade===1?['從基本生活常規著手，逐步培養有條理的生活習慣','逐步建立整理與環境維護的基本習慣','逐步培養尊重他人與合宜應對的基本態度','逐步建立承擔分內工作與參與團體事務的習慣','培養言行一致與履行承諾的基本責任感','逐步建立生活自律與遵守團體規範的習慣'].slice(e.dim,e.dim+1):[])]);
   return {...e,label:dims[e.dim],variants:unique(vs)};
  }
  const m=termById.get(e.id);
@@ -348,6 +349,9 @@ export function semesterPlan(scores,note='',profile={}){
  if(before!==p.observed.length)p.evidence.conflicts.push('同一主題正反觀察並存，保留成長方向並避免矛盾肯定。');
  p.evidence.strengths=p.observed;
  p.strengths=p.strengths.filter(e=>e.source!=='觀察'||p.observed.includes(e));
+ // Add alternative grade-supported descriptions; retain existing vocabulary for sparse evidence.
+ const added=[['生活常規良好','平時生活表現穩定'],['整潔習慣良好','能確實完成整潔工作'],['應對進退合宜','待人態度平和'],['能盡責完成分內工作','能配合班級事務'],['日常言行誠懇','能重視誠信'],['自律表現良好','生活上能自我要求']];
+ for(const e of [...p.strengths])if(e.source==='等第'&&e.grade===4)for(const phrase of added[e.dim])if(!p.strengths.some(s=>s.phrase===phrase))p.strengths.push({...e,phrase});
  if(!p.strengths.length||p.strengths.every(e=>e.source==='中性'))p.strengths=termNeutral.map(phrase=>({id:'neutral',kind:'strength',phrase,dim:-1,source:'中性'}));
  p.goals=p.goals.map(e=>termGoal(e,p.focus));p.observedGoals=p.goals.filter(e=>e.source==='觀察');p.evidence.goals=p.observedGoals;p.deferred=n.deferred;
  return p;
@@ -359,8 +363,9 @@ function termOutcomes(g,focus){
  return ['使整體表現更臻成熟','使個人的發展更加穩定'];
 }
 const termLeads=p=>unique([...(p.count&&p.features?.usesDirectAddress/p.count>=.6?['期許妳能','希望妳能','期待妳能']:[]),'若能','期許能','希望能','期待能','盼能','期盼能']);
+function termDistinct(a,b){if(a.source==='等第'&&b.source==='等第'&&[0,5].includes(a.dim)&&[0,5].includes(b.dim))return false;if(a.source==='觀察'&&['help','carePeers'].includes(a.id)&&b.source==='等第'&&b.dim===3)return similarity(a.phrase,b.phrase)<.45;return distinct(a,b);}
 function termPool(p,profile){
- const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,12);
+ const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
  const groups=p.goals.map(g=>[g]);
  for(let i=0;i<Math.min(p.goals.length,6);i++)for(let j=i+1;j<Math.min(p.goals.length,6);j++){
   const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&a.dim!==b.dim)groups.push([a,b]);
@@ -368,7 +373,7 @@ function termPool(p,profile){
  const heads=[];
  for(const a of first){
   heads.push({ss:[a],text:a.phrase});
-  for(const b of second)if(distinct(a,b))heads.push({ss:[a,b],text:a.phrase+'，'+b.phrase});
+  for(const b of second)if(termDistinct(a,b))heads.push({ss:[a,b],text:a.phrase+'，'+b.phrase});
  }
  const add=(head,gg,surfaces,lead,tail,sep)=>{
   const goal=surfaces.join('，並'),text=head.text+sep+lead+goal+(tail?'，'+tail:'')+'。',n=length(text);
@@ -396,18 +401,27 @@ function termCandidates(p,profile){
  const small={focus:p.focus,low:p.low,strengths:p.strengths.map(slot),observed:p.observed.map(slot),goals:p.goals.map(e=>({...slot(e),label:e.label,variants:e.variants})),observedGoals:p.observedGoals.map(slot)};
  const key=JSON.stringify([small,termLeads(profile)]);
  if(termCache.has(key)){const a=termCache.get(key);termCache.delete(key);termCache.set(key,a);return a;}
- const a=termPool(small,profile);if(a.length<=12000&&key.length<=16000){termCache.set(key,a);while(termCache.size>8)termCache.delete(termCache.keys().next().value);}return a;
+ const a=termPool(small,profile).map(c=>termStatic(c,small));if(a.length<=48000&&key.length<=16000){termCache.set(key,a);let total=[...termCache.values()].reduce((n,v)=>n+v.length,0);while(termCache.size>8||total>55000){const k=termCache.keys().next().value;total-=termCache.get(k).length;termCache.delete(k);}}return a;
 }
-function termRank(c,p,profile,div){
- const selected=[...c.ss,...c.gg],covered=[...p.observed,...p.observedGoals].filter(e=>selected.some(x=>x.kind===e.kind&&x.id===e.id&&x.phrase===e.phrase));
- const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
- const diversity=-(div.openings.get(parts[0])||0)*.8-(div.endings.get(parts.at(-1))||0)*.6-(div.connectives.get(connectiveFamily(c.text))||0)*.15-(div.shapes.get(shape)||0)*.05;
+function termStatic(c,p){
+ const selected=[...c.ss,...c.gg],covered=[...p.observed,...p.goals.filter(x=>x.source==='觀察')].filter(e=>selected.some(x=>x.kind===e.kind&&x.id===e.id&&x.phrase===e.phrase)||e.kind==='goal'&&c.surfaces.some(v=>e.variants?.includes(v)));
+ const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
+ const grade=c.ss.filter(e=>e.source==='等第').reduce((n,e)=>n+e.grade-2,0),balance=c.ss.every(x=>x.source==='中性')?0:-Math.abs(c.headLen-22)*.3,mismatch=p.focus==='延續優勢'&&c.ss.some(e=>c.gg.some(g=>g.dim===e.dim))?1:0;
+ let coherence=0;
+ if(c.ss.some(e=>e.source==='觀察'))for(const b of c.ss.filter(e=>e.source==='等第')){
+  if(b.dim===3&&c.ss.some(e=>['help','carePeers'].includes(e.id)))coherence+=3;
+  if(b.dim===3&&c.ss.some(e=>e.dim===2&&e.source==='觀察'))coherence+=1.8;
+  if(b.dim===1&&c.gg.some(e=>e.dim!==1))coherence-=1.2;
+ }
+ const redundantOutcome=c.tail&&(/更臻成熟|更加成熟|更為成熟/.test(c.tail)&&/更加成熟|更臻成熟/.test(c.surfaces.join('')))?1.5:0;
+ const repeatedDevelopment=/逐步[^。；]{0,30}逐步/.test(c.text)?4:0;
+ return {...c,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:c.text.includes('若能'),wish:/希望|期許|期待|盼能/.test(c.text)};
+}
+function termScore(c,profile,div){
+ const diversity=-(div.openings.get(c.open)||0)*.8-(div.endings.get(c.end)||0)*.6-(div.connectives.get(c.connector)||0)*.15-(div.shapes.get(c.shape)||0)*.05;
  const style=profile.model?.total||profile.structure||profile.preferred?.length?styleFit(c.text,profile):0;
- const grade=c.ss.filter(e=>e.source==='等第').reduce((n,e)=>n+e.grade-2,0);
- const balance=c.ss.every(x=>x.source==='中性')?0:-Math.abs(c.headLen-23)*.3;
- const mismatch=p.focus==='延續優勢'&&c.ss.some(e=>c.gg.some(g=>g.dim===e.dim))?1:0;
- const w=profile.discourse?.weights||{},learn=(w.semicolon||0)*Number(c.text.includes('；'))+(w.twoSentences||0)*Number(c.text.includes('。',c.headLen))+(w.conditional||0)*Number(c.text.includes('若能'))+(w.directWish||0)*Number(/希望|期許|期待|盼能/.test(c.text));
- return {...c,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),score:grade+balance+diversity+style*2+learn-dup*1.4-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)};
+ const w=profile.discourse?.weights||{},learn=(w.semicolon||0)*Number(c.semicolon)+(w.twoSentences||0)*Number(c.twoSentences)+(w.conditional||0)*Number(c.conditional)+(w.directWish||0)*Number(c.wish);
+ return c.base+diversity+style*2+learn;
 }
 export function semesterCoverage(note,scores,comment,custom=[]){
  const p=semesterPlan(scores,note,{semanticRules:custom});
@@ -418,8 +432,8 @@ export function deepGenerate(scores,note='',history=[],profile={}){
  const p=semesterPlan(scores,note,profile);
  if(!p.evidence.complete)return {comment:'',source:'incomplete',characters:0,plan:p,chosenStrengths:[],chosenGoals:[],issues:['評分未完成'],coverage:{recognized:0,missingStrengths:[],missingGoals:[],deferred:p.deferred},quality:{}};
  const div=diversityIndex(history),hf=history.map(similarityFeatures);
- const ranked=termCandidates(p,profile).map(c=>termRank(c,p,profile,div)).sort((a,b)=>b.coverage-a.coverage||b.priority-a.priority||b.score-a.score);
- const best=ranked.find(c=>riskAgainst(c.text,hf)<=.78),comment=best?.text||'';
+ const ranked=termCandidates(p,profile).map(c=>({c,score:termScore(c,profile,div)})).sort((a,b)=>b.c.coverage-a.c.coverage||b.c.priority-a.c.priority||b.score-a.score);
+ const best=ranked.find(x=>riskAgainst(x.c.text,hf)<=.78)?.c,comment=best?.text||'';
  const coverage=semesterCoverage(note,scores,comment,profile.semanticRules||[]);
  const chosenStrengths=(best?.ss||[]).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
  const chosenGoals=(best?.gg||[]).map((e,i)=>({phrase:best.surfaces[i],canonical:e.phrase,concept:e.label,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
