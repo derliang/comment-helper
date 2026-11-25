@@ -4,6 +4,9 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+concurrency:
+  group: comment-helper-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -25,11 +28,12 @@ jobs:
       - name: Install browser test dependencies
         run: |
           pip install playwright==1.51.0 openpyxl==3.1.5
-          python -m playwright install --with-deps chromium
+          python -m playwright install --with-deps chromium webkit
       - name: Browser release gate
         run: |
           python tests/browser-smoke.py
           python tests/class-release.py
+          python tests/mobile-webkit.py
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
