@@ -31,7 +31,7 @@ try:
         before=len(dialogs)
         with page.expect_download() as dl:page.locator('#menuDl summary').click();page.locator('#excel').click()
         result=tmp/'formal.xlsx';dl.value.save_as(result)
-        rows=list(load_workbook(result,read_only=True).active.values);assert len(rows)==47;assert rows[0]==('學號','座號','姓名','評語');assert [x[3] for x in rows[1:]]==[r['comment'] for r in students]
+        rows=list(load_workbook(result).active.values);assert len(rows)==47;assert rows[0]==('學號','座號','姓名','評語');assert [x[3] for x in rows[1:]]==[r['comment'] for r in students]
         with page.expect_download() as dl:page.locator('#menuDl summary').click();page.locator('#word').click()
         resultdoc=tmp/'formal.docx';dl.value.save_as(resultdoc)
         with zipfile.ZipFile(resultdoc) as z:
@@ -48,6 +48,11 @@ try:
         # Partial-rating continuation must stay on the current pupil and clear search.
         page.wait_for_timeout(2000);page.evaluate('''()=>{const k="comment-helper-v1",d=JSON.parse(localStorage.getItem(k)),p=d.projects[0];d.instant=false;p.open=p.students[0].id;p.students[0].scores=[3,null,null,null,null,null];p.students[0].stale=true;for(const r of p.students.slice(30)){r.scores=[null,null,null,null,null,null];r.stale=true;}localStorage.setItem(k,JSON.stringify(d));}''')
         page.reload();page.locator('#search').fill('合成學生01');page.locator('#primaryAct').click();expect(page.locator('.student.open .name')).to_have_text('合成學生01');expect(page.locator('#search')).to_have_value('');expect(page.locator('[data-prev]')).to_be_disabled();page.locator('[data-browse-next]').click();expect(page.locator('.student.open .name')).to_have_text('合成學生02');page.locator('[data-prev]').click();expect(page.locator('.student.open .name')).to_have_text('合成學生01')
+        expect(page.locator('[data-next]')).to_be_disabled()
+        page.locator('[data-browse-next]').click();expect(page.locator('[data-next]')).to_be_enabled()
+        page.locator('[data-next]').click();expect(page.locator('.student.open .name')).to_have_text('合成學生31')
+        page.locator('[data-back]').click();page.locator('#search').fill('fixture-002');expect(page.locator('.row')).to_have_count(1);page.locator('.row').click();expect(page.locator('.student.open .name')).to_have_text('合成學生02')
+        page.set_viewport_size({'width':1280,'height':800});expect(page.locator('[data-comment]')).to_be_editable();expect(page.locator('[data-score="0:5"]')).to_be_enabled()
         assert not errors,errors
         browser.close();print('PASS: 46-pupil end-to-end import, automatic formal comments, no confirmations, Excel/Word export, restore, mobile views')
 finally:server.shutdown()
