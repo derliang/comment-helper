@@ -8,3 +8,10 @@ test('audit contradictory hard failure and missing fields',()=>{const h=['資料
 test('abbreviated grades',()=>{assert.deepEqual(['優良','良好','尚可'].map(score),[5,4,3]);});
 
 test('all-low custom semantic goal produces valid semester comment',()=>{const rule={topic:'借閱管理',kind:'goal',keywords:['忘記還書','逾期還書'],phrase:'養成按時歸還的習慣',dim:5,grades:[1,2],priority:5,exclusions:[]};const r=deepGenerate([2,2,2,2,2,2],'常忘記還書',[],{semanticRules:[rule]});assert.ok(r.comment,r.issues.join('；'));assert.deepEqual(validate(r.comment,[]),[]);assert.match(r.comment,/歸還/);});
+
+import {readFileSync} from 'node:fs';import {parseReturnText} from '../roundtrip.mjs';
+import {seatCompare} from '../advanced.mjs';
+test('#16 non-numeric seats sort stably and numeric seats stay numeric',()=>{const mk=seat=>({seat,name:'生'+seat,scores:Array(6).fill(null),legacy:{}});assert.deepEqual(['10','A1','2','B2'].map(mk).sort(seatCompare).map(r=>r.seat),['2','10','A1','B2']);const m=mergeRoster(['10','A1','2'].map(mk),mergeSheets([[['座號','姓名'],['3','丙']]]));assert.deepEqual(m.students.map(r=>r.seat),['2','3','10','A1']);});
+test('#16 quoted CSV fields containing commas are not split',()=>{const rows=parseReturnText('座號,姓名\n1,"王,小明"\n2,"林""美""華"');assert.deepEqual(rows[1],['1','王,小明']);assert.deepEqual(rows[2],['2','林"美"華']);});
+test('#16 vendor scripts are pinned by SHA-256 in the build',()=>{const s=readFileSync(new URL('../scripts/build-site.sh',import.meta.url),'utf8');assert.equal((s.match(/sha256sum -c -/g)||[]).length,2);assert.match(s,/cc015130aa8521e7f088f88898eba949ccdcbfb38df0bd129b44b7273c3a6f41/);});
+test('#8 roster conflict details name both students and say they are skipped',()=>{const old=mergeSheets([[['座號','姓名'],['01','王小明']]]);const r=mergeRoster(old,mergeSheets([[['座號','姓名'],['1','李小龍'],['02','林美華']]]));assert.equal(r.conflicts,1);assert.equal(r.added,1);assert.match(r.conflictDetails[0],/李小龍.*王小明.*略過/);});
