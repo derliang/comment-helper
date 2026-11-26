@@ -1,4 +1,4 @@
-import {newId} from './advanced.mjs';
+import {newId,seatCompare} from './advanced.mjs';
 import {dims,levels,length} from './engine.mjs';
 const clean=v=>String(v??'').normalize('NFKC').replace(/\s+/g,'').trim();
 const text=v=>String(v??'').trim();
@@ -27,7 +27,7 @@ export function mergeSheets(sheets,{allowNames=false}={}){
   if(!existing){if(out.some(x=>seatKey(x.seat)===seatKey(r.seat)))throw Error('匯入名單座號衝突：'+r.seat+' '+r.name+'／'+out.find(x=>seatKey(x.seat)===seatKey(r.seat)).name);out.push(r);continue;}
    if(clean(existing.name)!==clean(r.name)||seatKey(existing.seat)!==seatKey(r.seat))throw Error('匯入資料身分衝突：'+existing.seat+' '+existing.name+'／'+r.seat+' '+r.name+'，請核對學號與座號');
   existing.studentId||=r.studentId;existing.scores=existing.scores.map((v,i)=>v??r.scores[i]);existing.note=append(existing.note,r.note);existing.legacy={...existing.legacy,...r.legacy};existing.comment||=r.comment;
- }}return out.sort((a,b)=>Number(a.seat)-Number(b.seat));
+ }}return out.sort(seatCompare);
 }
 // A printed school report has one pupil across five physical rows, with split ID and comment fragments.
 export function parseReportTables(tables){const result=[];for(const rows of tables){if(!rows.some(r=>clean(r[3]).includes('日常生活表現'))||!rows.some(r=>clean(r[3])==='評量'))continue;let current=null;for(const row of rows){const r=row.map(text);if(/^\d+$/.test(clean(r[0]))&&text(r[2])){current=newRecord(r[0],r[2],r[1]);result.push(current);}else if(current&&/^\d+$/.test(clean(r[1])))current.studentId+=clean(r[1]);if(!current)continue;
