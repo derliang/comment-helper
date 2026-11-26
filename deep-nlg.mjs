@@ -671,6 +671,7 @@ export function semesterPlan(scores,note='',profile={}){
  const added=[['生活常規良好','平時生活表現穩定'],['整潔習慣良好','整潔方面表現良好'],['應對進退合宜','日常禮節表現良好'],['班級服務表現良好','能配合班級事務'],['日常誠信表現良好','能重視誠信'],['自律表現良好','生活上能自我要求']];
  for(const e of [...p.strengths])if(e.source==='等第'&&e.grade===4)for(const phrase of added[e.dim])if(!p.strengths.some(s=>s.phrase===phrase))p.strengths.push({...e,phrase});
  if(!p.strengths.length||p.strengths.every(e=>e.source==='中性'))p.strengths=termNeutral.map(phrase=>({id:'neutral',kind:'strength',phrase,dim:-1,source:'中性'}));
+ if(p.low<=2&&p.observedGoals.length){const covered=new Set(p.observedGoals.map(e=>e.dim));p.goals=[...p.goals,...scores.flatMap((v,dim)=>v===p.low&&!covered.has(dim)?[{id:'grade-goal-'+dim,kind:'goal',phrase:gradeGuidance[dim][v-1],dim,source:'等第',grade:v}]:[])];}
  p.goals=p.goals.map(e=>({...termGoal(e,p.focus),tone:goalTone(e,scores,p.focus)}));p.observedGoals=p.goals.filter(e=>e.source==='觀察');p.evidence.goals=p.observedGoals;p.deferred=n.deferred;p.portrait=portraitModel(p);
  return p;
 }
@@ -716,7 +717,7 @@ function termPool(p,profile){
  const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
  const groups=p.goals.map(g=>[g]);
  for(let i=0;i<Math.min(p.goals.length,6);i++)for(let j=i+1;j<Math.min(p.goals.length,6);j++){
-  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&(a.dim!==b.dim||a.source==='觀察'&&b.source==='觀察'))groups.push([a,b]);
+  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&(a.source==='等第'||b.source==='等第'))&&a.label!==b.label&&(a.dim!==b.dim||a.source==='觀察'&&b.source==='觀察'))groups.push([a,b]);
  }
  const heads=[];
  for(const a of first){

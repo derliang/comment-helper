@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check app.mjs && node --check engine.mjs && node --check deep-nlg.mjs && node --check importers.mjs && node --check advanced.mjs && node --check server/ai-proxy.mjs && node --test
+      - run: node --check app.mjs && node --check engine.mjs && node --check deep-nlg.mjs && node --check importers.mjs && node --check advanced.mjs && node --check server/ai-proxy.mjs && node --check handoff.mjs && node --check roundtrip.mjs && node --test
       - name: Build static site with pinned vendor scripts
         run: bash scripts/build-site.sh
       - uses: actions/setup-python@v5
