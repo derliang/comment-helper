@@ -26,7 +26,7 @@ export function parseReturnAudit(rows){
  const header=rows[0].map(x=>String(x??'').trim()),ci=header.indexOf('資料代碼'),ri=header.indexOf('結果');
  if(ci<0||ri<0)return result;
  for(const row of rows.slice(1)){const code=String(row[ci]??'').trim(),status=String(row[ri]??'').trim();if(!code)continue;
-  result.set(code,result.has(code)?'重複覆核紀錄':status);
+  const cols=['A','B','C','D','E','F','G','H'].map(k=>header.findIndex(h=>h===k||h.startsWith(k+' ')));const values=cols.map(i=>i<0?'':String(row[i]??'').trim());let verified=status;if(values.includes('0'))verified='未通過';else if(status==='通過'&&(!values.every(v=>v==='2')||/未提供/.test(String(row[header.indexOf('歷史範圍')]??''))))verified='待教師核對';result.set(code,result.has(code)?'重複覆核紀錄':verified);
  }
  return result;
 }
