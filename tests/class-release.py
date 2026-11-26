@@ -31,7 +31,7 @@ try:
         before=len(dialogs)
         with page.expect_download() as dl:page.locator('#menuDl summary').click();page.locator('#excel').click()
         result=tmp/'formal.xlsx';dl.value.save_as(result)
-        rows=list(load_workbook(result,read_only=True).active.values);assert len(rows)==47;assert rows[0]==('座號','姓名','評語');assert [x[2] for x in rows[1:]]==[r['comment'] for r in students]
+        rows=list(load_workbook(result,read_only=True).active.values);assert len(rows)==47;assert rows[0]==('學號','座號','姓名','評語');assert [x[3] for x in rows[1:]]==[r['comment'] for r in students]
         with page.expect_download() as dl:page.locator('#menuDl summary').click();page.locator('#word').click()
         resultdoc=tmp/'formal.docx';dl.value.save_as(resultdoc)
         with zipfile.ZipFile(resultdoc) as z:
