@@ -35,7 +35,7 @@ export function previewReturn(rows,batches,project,history=[],audit=new Map()){
  const proposalCounts=new Map();for(const x of rows)if(x.comment){const n=normalize(x.comment);proposalCounts.set(n,(proposalCounts.get(n)||0)+1);}
  const entries=rows.map(x=>{
   const batch=batches.find(b=>Array.isArray(b.mapping)&&b.mapping.some(m=>m.code===x.code)),m=batch?.mapping.find(m=>m.code===x.code),r=project.students.find(y=>y.id===m?.id);
-  const errors=[],advisories=[];const verdict=audit.get(x.code);if(verdict==='未通過'||verdict==='重複覆核紀錄')errors.push('AI 覆核未通過或紀錄衝突');else if(verdict==='待教師核對')advisories.push('AI 標記待教師核對，請閱讀後自行勾選採用');
+  const errors=[],advisories=[];const verdict=audit.get(x.code);if(verdict==='未通過'||verdict==='重複覆核紀錄')errors.push('AI 覆核未通過或紀錄衝突');else if(verdict==='待教師核對')advisories.push('AI 標記待教師核對，請閱讀後自行勾選採用');else if(verdict!=='通過')advisories.push('缺少有效 AI 覆核紀錄，請閱讀後自行勾選採用');
   if(counts.get(x.code)>1)errors.push('重複資料代碼');
   if(!batch||!m)errors.push('未知交接代碼');
   if(batch&&batch.projectId!==project.id)errors.push('非目前班級');

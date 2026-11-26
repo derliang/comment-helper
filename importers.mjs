@@ -9,7 +9,7 @@ const newRecord=(seat,name,studentId='')=>({id:crypto.randomUUID(),seat:text(sea
 const append=(a,b)=>[...new Set([a,b].filter(Boolean))].join('；');
 export function parseSheet(rows,{allowNames=false}={}){
  const hi=rows.findIndex(r=>r.some(v=>fields.name.includes(header(v))));
- if(hi<0){if(!allowNames)return [];return rows.filter(r=>r.some(v=>text(v))).map((r,i)=>newRecord(r.length>1?r[0]:i+1,r.length>1?r[1]:r[0])).filter(r=>r.name);}
+ if(hi<0){if(!allowNames)return [];return rows.filter(r=>r.some(v=>text(v))).map((r,i)=>{if(r.length>1)return newRecord(r[0],r[1]);const value=text(r[0]),m=value.match(/^([0-9０-９]+)\s+(.+)$/u);return m?newRecord(m[1],m[2]):newRecord(i+1,value);}).filter(r=>r.name&&!/^\d+$/.test(clean(r.name))&&/^\d+$/.test(clean(r.seat))&&Number(clean(r.seat))>0);}
  const h=rows[hi].map(header),find=keys=>h.findIndex(v=>keys.includes(v));const ni=find(fields.name),si=find(fields.seat),ii=find(fields.studentId),ci=h.findIndex(v=>/評語/.test(v));
  return rows.slice(hi+1).filter(r=>text(r[ni])&&!fields.name.includes(header(r[ni]))&&(si<0||/^\d+$/.test(clean(r[si])))).map((r,i)=>{
   const o=newRecord(si>=0?r[si]:i+1,r[ni],ii>=0?r[ii]:'');
@@ -22,8 +22,9 @@ export function parseSheet(rows,{allowNames=false}={}){
 }
 export function mergeSheets(sheets,{allowNames=false}={}){
  const out=[];for(const rows of sheets){for(const r of parseSheet(rows,{allowNames:allowNames&&sheets.length===1})){
-  const existing=out.find(x=>r.studentId&&x.studentId?x.studentId===r.studentId:seatKey(x.seat)===seatKey(r.seat)&&clean(x.name)===clean(r.name));
-  if(!existing){out.push(r);continue;}
+  const existing=out.find(x=>r.studentId&&x.studentId?clean(x.studentId).toUpperCase()===clean(r.studentId).toUpperCase():seatKey(x.seat)===seatKey(r.seat)&&clean(x.name)===clean(r.name));
+  if(!existing){if(out.some(x=>seatKey(x.seat)===seatKey(r.seat)))throw Error('匯入名單座號衝突：'+r.seat+' '+r.name);out.push(r);continue;}
+   if(clean(existing.name)!==clean(r.name)||seatKey(existing.seat)!==seatKey(r.seat))throw Error('匯入資料身分衝突：'+existing.seat+' '+existing.name+'／'+r.seat+' '+r.name+'，請核對學號與座號');
   existing.studentId||=r.studentId;existing.scores=existing.scores.map((v,i)=>v??r.scores[i]);existing.note=append(existing.note,r.note);existing.legacy={...existing.legacy,...r.legacy};existing.comment||=r.comment;
  }}return out.sort((a,b)=>Number(a.seat)-Number(b.seat));
 }
