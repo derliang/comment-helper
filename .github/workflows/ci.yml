@@ -34,6 +34,8 @@ jobs:
           python tests/browser-smoke.py
           python tests/class-release.py
           python tests/mobile-webkit.py
+      - name: Classroom E2E regression (46 synthetic students)
+        run: python tests/classroom-e2e.py
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
