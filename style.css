@@ -262,3 +262,44 @@ dialog textarea{width:100%;height:140px;margin:12px 0}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
 @media(max-width:760px){#menuTools>summary{white-space:nowrap} .admin-table-wrap{max-width:100%;min-width:0} .admin-panel{min-width:0}}
+
+/* v1.11.1 更多工具：樹狀分組＋代表圖示 */
+.tools-pop{width:min(360px,calc(100vw - 32px))}
+.tree-group{margin:4px 0 6px}
+.tree-group>h4{margin:8px 10px 4px}
+.tree{list-style:none;margin:0 0 0 14px;padding:0 0 0 14px;border-left:2px solid var(--line2)}
+.tree li{position:relative}
+.tree li::before{content:"";position:absolute;left:-14px;top:50%;width:12px;border-top:2px solid var(--line2)}
+.tree .pi{padding:7px 8px}
+.tree .pi .ic{color:var(--accent)}
+
+/* v1.11.1 評分頁單頁不捲動（寬螢幕）：評分與評語並排，整頁高度固定，只在面板內部捲動 */
+@media(min-width:1000px){
+  .split{height:calc(100vh - 117px);min-height:0;overflow:hidden}
+  .roster{max-height:none;height:100%}
+  .detail{min-height:0;height:100%;overflow:hidden}
+  .detail>article{height:100%;min-height:0;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:10px 14px;padding-top:12px;overflow:hidden}
+  .detail>article>.dh{grid-column:1/-1}
+  .detail>article>.score-pane{grid-column:1;grid-row:2;min-height:0;overflow:auto;padding:12px 14px}
+  .detail>article>.two{grid-column:2;grid-row:2;display:flex;flex-direction:column;gap:10px;min-height:0}
+  .detail>article>.two>.card{flex:1 1 0;min-height:0;overflow:auto;padding:12px 14px}
+  .detail>article>.abar{grid-column:1/-1;grid-row:3;margin-top:0;position:static}
+  .rate{padding:2px 0;grid-template-columns:84px minmax(0,220px) minmax(0,1fr)}
+  .rate .lvt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .lv button{min-height:26px;font-size:14px}
+  .rubric{margin-top:6px;padding:6px 10px}
+  .preview{display:flex;flex-direction:column;height:100%;min-height:0}
+  .preview textarea{flex:1 1 auto;min-height:72px}
+}
+@media(min-width:1000px){
+  main:has(#work:not([hidden])){height:calc(100vh - 56px);overflow:hidden}
+  main:has(#work:not([hidden])) .foot{display:none}
+  .detail>article>.score-pane .rate:first-child{border-top:0}
+}
+/* v1.11.1 快速設定：加大點擊範圍，避免點不到 */
+.toolbar.quick{gap:8px;margin-top:8px}
+.toolbar.quick .btn{min-height:34px;min-width:52px;padding:0 12px;touch-action:manipulation}
+@media(min-width:1000px){
+  .toolbar.quick{gap:6px;margin-top:6px}
+  .toolbar.quick .btn{min-height:28px;min-width:0;padding:0 9px}
+}

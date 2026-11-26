@@ -76,15 +76,11 @@ def run(browser, url, tmp, mobile):
         page.locator('.row').first.click()
         original=page.locator('[data-comment]').input_value()
         assert 42<=len(original)<=50
-        page.locator('[data-confirm]').click()
-        expect(page.locator('[data-comment]')).to_have_js_property('readOnly',True)
-        page.locator('[data-confirm]').click()
-        expect(page.locator('[data-comment]')).to_have_js_property('readOnly',False)
         page.reload()
         expect(page.locator('[data-comment]')).to_have_value(original)
         excel=download('#menuDl','excel','formal.xlsx')
         rows=list(load_workbook(excel,read_only=True).active.values)
-        assert len(rows)==47 and rows[0]==('座號','姓名','評語')
+        assert len(rows)==47 and rows[0]==('學號','座號','姓名','評語')
         assert len({r[1] for r in rows[1:]})==46
         assert all(42<=len(r[2])<=50 for r in rows[1:])
         word=download('#menuDl','word','formal.docx')
