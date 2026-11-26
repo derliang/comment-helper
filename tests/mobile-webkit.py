@@ -38,7 +38,7 @@ try:
         page.reload();expect(page.locator('[data-comment]')).to_have_value(edited);expect(page.locator('#commentProgressText')).to_contain_text('2 / 2');width_ok()
         before=len(dialogs)
         with page.expect_download(timeout=30000) as dl:page.locator('#menuDl summary').tap();page.locator('#excel').tap()
-        result=tmp/'formal.xlsx';dl.value.save_as(result);rows=list(load_workbook(result,read_only=True).active.values);assert len(rows)==3 and rows[1][2]==edited
+        result=tmp/'formal.xlsx';dl.value.save_as(result);rows=list(load_workbook(result,read_only=True).active.values);assert len(rows)==3 and rows[0]==('學號','座號','姓名','評語') and rows[1][3]==edited
         with page.expect_download(timeout=30000) as dl:page.locator('#menuDl summary').tap();page.locator('#word').tap()
         result=tmp/'formal.docx';dl.value.save_as(result)
         with zipfile.ZipFile(result) as z:
