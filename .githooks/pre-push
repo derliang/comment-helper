@@ -6,4 +6,5 @@ for v in $(env | grep '^GIT_' | cut -d= -f1); do unset "$v"; done
 cd "$(git rev-parse --show-toplevel 2>/dev/null || pwd)" || exit 1
 for f in *.mjs server/*.mjs; do node --check "$f" || exit 1; done
 files=$(ls tests/*.test.mjs | grep -v 'tests/engine.test.mjs')
+node --test --test-name-pattern='six dimensions|history and validation|roster import|custom semantics|formal comments' tests/engine.test.mjs || exit 1
 node --test $files || { echo "[pre-push] 測試未通過，已擋下 push"; exit 1; }

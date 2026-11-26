@@ -6,3 +6,5 @@ test('missing or invalid audit requires manual selection',()=>{const r={id:'r',s
 import {parseReturnAudit} from '../roundtrip.mjs';import {score} from '../importers.mjs';import {deepGenerate} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
 test('audit contradictory hard failure and missing fields',()=>{const h=['資料代碼','結果','A 身分','B 評分','C 觀察','D 安全','E 建議','F 格式','G 風格','H 去重'];assert.equal(parseReturnAudit([h,['s','通過',2,0,2,2,2,2,2,2]]).get('s'),'未通過');assert.equal(parseReturnAudit([h,['s','通過',2,2,2,2,2,2,2,1]]).get('s'),'待教師核對');assert.equal(parseReturnAudit([h,['s','通過',2,2,2,2,2,2,2,2]]).get('s'),'通過');});
 test('abbreviated grades',()=>{assert.deepEqual(['優良','良好','尚可'].map(score),[5,4,3]);});
+
+test('all-low custom semantic goal produces valid semester comment',()=>{const rule={topic:'借閱管理',kind:'goal',keywords:['忘記還書','逾期還書'],phrase:'養成按時歸還的習慣',dim:5,grades:[1,2],priority:5,exclusions:[]};const r=deepGenerate([2,2,2,2,2,2],'常忘記還書',[],{semanticRules:[rule]});assert.ok(r.comment,r.issues.join('；'));assert.deepEqual(validate(r.comment,[]),[]);assert.match(r.comment,/歸還/);});
