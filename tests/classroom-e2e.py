@@ -79,7 +79,7 @@ def run(browser, url, tmp, mobile):
         page.reload()
         expect(page.locator('[data-comment]')).to_have_value(original)
         excel=download('#menuDl','excel','formal.xlsx')
-        rows=list(load_workbook(excel,read_only=True).active.values)
+        rows=list(load_workbook(excel).active.values)
         assert len(rows)==47 and rows[0]==('學號','座號','姓名','評語')
         assert len({r[1] for r in rows[1:]})==46
         assert all(42<=len(r[3])<=50 for r in rows[1:])
@@ -92,7 +92,7 @@ def run(browser, url, tmp, mobile):
         page.locator('#closeAudit').click()
         page.locator('[data-go="settings"]' if mobile else '[data-tab="settings"]').click()
         backup=download(None,'backup','backup.json')
-        data=json.loads(backup.read_text())
+        data=json.loads(backup.read_text(encoding='utf-8'))
         assert len(data['projects'][0]['students'])==46
         page.locator('#restore').set_input_files(backup)
         page.locator('[data-go="work"]' if mobile else '[data-tab="work"]').click()
