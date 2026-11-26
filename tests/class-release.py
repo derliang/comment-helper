@@ -45,6 +45,9 @@ try:
         page.set_viewport_size({'width':375,'height':812});assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1'),page.evaluate("""Array.from(document.querySelectorAll('body *')).filter(e=>{const b=e.getBoundingClientRect();return b.width&&b.right>innerWidth+1}).slice(0,15).map(e=>[e.tagName,e.id,e.className?.toString(),Math.round(e.getBoundingClientRect().right)])""")
         page.locator('#menuTools summary').click();page.locator('#matrixBtn').click();expect(page.locator('.matrix tbody tr')).to_have_count(46);page.locator('#closeClassDialog').click()
         page.locator('#menuTools summary').click();page.locator('#classEditBtn').click();expect(page.locator('[data-class-comment]')).to_have_count(46);page.locator('#closeClassDialog').click()
+        # Partial-rating continuation must stay on the current pupil and clear search.
+        page.wait_for_timeout(2000);page.evaluate('''()=>{const k="comment-helper-v1",d=JSON.parse(localStorage.getItem(k)),p=d.projects[0];d.instant=false;p.open=p.students[0].id;p.students[0].scores=[3,null,null,null,null,null];p.students[0].stale=true;for(const r of p.students.slice(30)){r.scores=[null,null,null,null,null,null];r.stale=true;}localStorage.setItem(k,JSON.stringify(d));}''')
+        page.reload();page.locator('#search').fill('合成學生01');page.locator('#primaryAct').click();expect(page.locator('.student.open .name')).to_have_text('合成學生01');expect(page.locator('#search')).to_have_value('');expect(page.locator('[data-prev]')).to_be_disabled();page.locator('[data-browse-next]').click();expect(page.locator('.student.open .name')).to_have_text('合成學生02');page.locator('[data-prev]').click();expect(page.locator('.student.open .name')).to_have_text('合成學生01')
         assert not errors,errors
         browser.close();print('PASS: 46-pupil end-to-end import, automatic formal comments, no confirmations, Excel/Word export, restore, mobile views')
 finally:server.shutdown()

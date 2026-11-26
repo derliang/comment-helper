@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --check app.mjs && node --check engine.mjs && node --check deep-nlg.mjs && node --check importers.mjs && node --check advanced.mjs && node --check server/ai-proxy.mjs && node --test
+      - run: node --check app.mjs && node --check engine.mjs && node --check deep-nlg.mjs && node --check importers.mjs && node --check advanced.mjs && node --check server/ai-proxy.mjs && node --check handoff.mjs && node --check roundtrip.mjs && node --test
       - name: Build static site with pinned vendor scripts
         run: bash scripts/build-site.sh
       - uses: actions/setup-python@v5
@@ -34,6 +34,8 @@ jobs:
           python tests/browser-smoke.py
           python tests/class-release.py
           python tests/mobile-webkit.py
+      - name: Classroom E2E regression (46 synthetic students)
+        run: python tests/classroom-e2e.py
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:

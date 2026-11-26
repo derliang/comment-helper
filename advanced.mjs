@@ -1,7 +1,7 @@
 import {dims,complete,length,similarity,validate ,validSemanticRule} from './engine.mjs';
 export const VERSION='1.11.0';
 export const identity=v=>String(v??'').normalize('NFKC').replace(/\s+/g,'');
-export const sameStudent=(a,b)=>Boolean(identity(a.studentId)&&identity(a.studentId)===identity(b.studentId));
+export const sameStudent=(a,b)=>Boolean(identity(a.studentId)&&identity(a.studentId).toUpperCase()===identity(b.studentId).toUpperCase());
 export function relatedHistory(r,history,projects=[]){return [...history,...projects.flatMap(p=>p.students.filter(x=>x.id!==r.id&&x.comment&&x.confirmed).map(x=>({...x,source:p.name})))].filter(h=>sameStudent(r,h)&&h.comment);}
 export function redact(text,people=[]){let s=String(text??'');const names=new Set();for(const p of people){const n=String(p.name??'').trim();if(n.length>=2){names.add(n);if(n.length>=3)names.add(n.slice(1));}const id=identity(p.studentId);if(id.length>=3)names.add(id);}for(const n of [...names].sort((a,b)=>b.length-a.length))s=s.split(n).join('學生');return s.replace(/[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}/g,'[電子郵件]').replace(/\d{5,}/g,'[數字]');}
 export function adaptiveProfile(base,feedback=[]){const edits=feedback.filter(x=>x.raw&&x.final&&x.raw!==x.final);const words=base.preferred||[];const preferred=[...words].sort((a,b)=>{const delta=w=>edits.reduce((n,e)=>n+(e.final.includes(w)?1:0)-(e.raw.includes(w)?1:0),0);return delta(b)-delta(a);});return {...base,preferred,edits:edits.length};}
@@ -12,7 +12,7 @@ export async function generateAI({endpoint,token,rules,scores,context,history=[]
 export function matchHistoricalId(history,index,value){const id=identity(value);if(!history[index])throw Error('找不到歷史紀錄');if(id&&!/^[\p{L}\p{N}][\p{L}\p{N}._-]{0,30}$/u.test(id))throw Error('學號格式不符');return history.map((h,i)=>i===index?{...h,studentId:id}:h);}
 
 // Stable IDs take precedence. A seat collision with another ID is a conflict, not a merge.
-export function mergeRoster(existing,incoming){const students=existing.map(r=>({...r,scores:[...r.scores],legacy:{...r.legacy}}));let added=0,updated=0,conflicts=0;for(const r of incoming){const seat=identity(r.seat).replace(/^0+(?=\d)/,''),sameSeat=students.find(x=>identity(x.seat).replace(/^0+(?=\d)/,'')===seat);const sameId=students.find(x=>sameStudent(x,r));const old=sameId||sameSeat;if(!old){students.push(r);added++;continue;}if(old.confirmed||identity(old.name)!==identity(r.name)||(old.studentId&&r.studentId&&!sameStudent(old,r))||(sameId&&sameSeat&&sameId!==sameSeat)){conflicts++;continue;}old.studentId||=r.studentId;old.scores=old.scores.map((v,i)=>v??r.scores[i]);old.note||=r.note;old.comment||=r.comment;old.legacy={...r.legacy,...old.legacy};updated++;}students.sort((a,b)=>Number(a.seat)-Number(b.seat));return {students,added,updated,conflicts};}
+export function mergeRoster(existing,incoming){const students=existing.map(r=>({...r,scores:[...r.scores],legacy:{...r.legacy}}));let added=0,updated=0,conflicts=0;const conflictDetails=[];for(const r of incoming){const seat=identity(r.seat).replace(/^0+(?=\d)/,''),sameSeat=students.find(x=>identity(x.seat).replace(/^0+(?=\d)/,'')===seat);const sameId=students.find(x=>sameStudent(x,r));const old=sameId||sameSeat;if(!old){students.push(r);added++;continue;}if(old.confirmed||identity(old.name)!==identity(r.name)||(old.studentId&&r.studentId&&!sameStudent(old,r))||(sameId&&sameSeat&&sameId!==sameSeat)){conflicts++;conflictDetails.push(`${r.seat} ${r.name}（與 ${old.seat} ${old.name} 衝突或已保護）`);continue;}old.studentId||=r.studentId;old.scores=old.scores.map((v,i)=>v??r.scores[i]);old.note||=r.note;old.comment||=r.comment;old.legacy={...r.legacy,...old.legacy};updated++;}students.sort((a,b)=>Number(a.seat)-Number(b.seat));return {students,added,updated,conflicts,conflictDetails};}
 
 /** Transparent synonym-based local signals. Advisory only, not an embedding model. */
 const concepts=[
@@ -86,3 +86,5 @@ export function directionOverlap(a,b){
  for(const [k,ds] of x){const other=y.get(k);if(!other)continue;shared++;const strong=ds.has('strength')&&other.has('strength'),goal=ds.has('goal')&&other.has('goal');if(strong||goal)aligned++;else if((ds.has('strength')&&other.has('goal'))||(ds.has('goal')&&other.has('strength')))changed++;}
  return {shared,aligned,changed};
 }
+
+export function newId(){const c=globalThis.crypto;if(typeof c?.randomUUID==='function')return c.randomUUID();if(typeof c?.getRandomValues!=='function')throw Error('此瀏覽器不支援安全識別碼，請使用新版瀏覽器');const b=c.getRandomValues(new Uint8Array(16));b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;const h=Array.from(b,v=>v.toString(16).padStart(2,'0')).join('');return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-');}
