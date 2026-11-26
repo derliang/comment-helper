@@ -2,8 +2,6 @@
 
 > 給所有要改畫面的開發者與 AI（Claude、ChatGPT／Codex 等）。設計「長什麼樣」看 [DESIGN.md](DESIGN.md)；本文件規定「怎麼寫進程式」。兩份衝突時以 DESIGN.md 為準。要偏離，先改 DESIGN.md 並取得使用者確認。
 
-> **改版狀態（2026-11-26）**：DESIGN.md 已改為全站改版後的目標畫面，程式尚未實作。改版實作另開 PR，範圍見 DESIGN.md〈4〉「實作對照」；實作期間，下文提到的 `style.css` 舊結構（四層 `:root`、側欄、`.stat`、`.student` 展開卡等）指的是**待替換的舊版**，新樣式以 DESIGN.md〈2〉tokens 與〈4〉元件為準。實作完成後回頭刪除本段。
-
 ## 1. 開工前
 
 1. 讀 `DESIGN.md`（tokens、元件、頁面表、不要做的事）與本文件。
