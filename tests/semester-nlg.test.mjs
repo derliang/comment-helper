@@ -1,4 +1,4 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature,semesterLanguageInventory,semesterLexicalInventory,semesterToneSyntaxInventory,semesterWordingQuality,semesterStyleModel,semesterStyleFit} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
+import test from 'node:test';import assert from 'node:assert/strict';import {deepGenerate,deepAlternatives,semesterCoverage,semesterPlan,semesterSemanticSignature,semesterLanguageInventory,semesterLexicalInventory,semesterToneSyntaxInventory,semesterWordingQuality,semesterStyleModel,semesterStyleFit,semesterPraiseQuality} from '../deep-nlg.mjs';import {validate} from '../engine.mjs';
 const s=[4,4,4,4,4,3];
 test('semester evaluation abstracts incidents into enduring developmental concepts',()=>{for(const [note,concept,re] of [['待人有禮，但擅自離開教室','生活自律與規範',/自律|自我管理/],['熱心協助同學，但經常與同學爭執','人我調和',/人我|人際|相處/],['熱心協助同學，但經常遲到','時間管理',/守時/],['熱心協助同學，但忘記打掃','整潔與責任',/整潔|環境維護/]]){const x=deepGenerate(s,note);assert.match(x.comment,re);assert.ok(x.chosenGoals.some(e=>e.concept===concept));assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.issues,[]);assert.doesNotMatch(x.comment,/先向師長說明|先聽對方說完|擅自離開|將有助於|提早做好出門/);assert.equal(x.quality.level,'學期總結性評量');}});
 test('explicit isolated incidents do not establish semester-wide defects or strengths',()=>{const p=semesterPlan([4,4,4,4,4,4],'待人有禮，但今天擅自離開教室，某次協助班級活動');assert.equal(p.deferred.length,2);assert.equal(p.focus,'延續優勢');assert.equal(p.observedGoals.length,0);assert.ok(!p.observed.some(e=>e.id==='classEvents'));const x=deepGenerate([4,4,4,4,4,4],'今天擅自離開教室');assert.equal(x.plan.focus,'延續優勢');assert.deepEqual(x.issues,[]);});
@@ -179,4 +179,26 @@ test('style adaptation changes actual choices only inside evidence and quality b
  const examples=lead=>['培養自律習慣','增進時間觀念','加強整潔責任','重視團體規範','增進溝通能力','培養負責態度'].map(v=>'生活常規良好，待人有禮；'+lead+v+'，使日常表現更加穩定。');
  let changed=0;for(const note of ['待人有禮，但經常遲到','熱心協助同學，但經常與同學爭執','待人有禮，但經常遲到、忘記打掃','上課容易分心',''])for(const lead of ['若能','期許能','盼能']){const x=deepGenerate(s,note,[],{examples:examples(lead)});assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);const a=x.quality.style.adaptation;if(a.applied){changed++;assert.equal(a.selected,a.preferred);assert.ok(a.scoreCost<=6);}}assert.ok(changed>0);
  const sparse=deepGenerate(s,'經常遲到',[],{examples:examples('若能').slice(0,2)});assert.equal(sparse.quality.style.adaptation.applied,false);
+});
+
+
+test('related recurring shortcomings form one developmental paragraph, not a checklist',()=>{
+ const note='待人有禮，但經常遲到、忘記打掃',x=deepGenerate(s,note);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.equal(x.quality.warning.explicit.length,2);assert.equal(x.quality.warning.realizedClauses,1);assert.ok(x.quality.integration);assert.match(x.comment,/守時/);assert.match(x.comment,/整潔/);assert.ok(x.quality.balance.ratio>=.35);
+ const removed=x.comment.replace(/維護整潔|整潔工作|環境整潔|整潔習慣/,'日常事務');assert.ok(semesterCoverage(note,s,removed).missingGoals.length>0);
+ const y=deepGenerate(s,'經常遲到、上課容易分心');assert.equal(y.quality.warning.realizedClauses,1);assert.deepEqual(y.coverage.missingGoals,[]);assert.match(y.comment,/學習專注/);
+ const z=deepGenerate(s,'待人有禮，但偶爾遲到、忘記打掃');assert.equal(z.quality.integration,null);assert.equal(z.quality.warning.explicit.length,1);
+});
+
+
+test('related development themes keep actual concerns while supported praise is integrated',()=>{
+ const notes=['待人有禮，但經常遲到、忘記打掃','經常遲到、上課容易分心','待人有禮，但經常遲到、經常違規','待人有禮，但上課容易分心、經常不交作業'];
+ for(const note of notes){const x=deepGenerate(s,note);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.deepEqual(x.coverage.missingStrengths,[]);assert.ok(x.quality.evidence.strengths.every(e=>e.source!=='等第'||e.grade>=3&&!x.quality.evidence.blockedGradeDimensions.includes(e.dimension)));}
+ const h=[];for(let i=0;i<6;i++){const x=deepGenerate(s,notes[0],h);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.equal(x.quality.warning.realizedClauses,1);h.push(x.comment);}assert.equal(new Set(h).size,6);
+});
+
+
+test('natural praise avoids rubric padding and distinct domains share syntax without losing evidence',()=>{
+ assert.equal(semesterPraiseQuality('待人有禮，在班級服務方面也有良好表現').stock,1);assert.equal(semesterPraiseQuality('待人有禮，對班級事務也能妥善配合').stock,0);
+ const note='經常說謊、上課容易分心',x=deepGenerate(s,note);assert.deepEqual(x.issues,[]);assert.deepEqual(x.coverage.missingGoals,[]);assert.equal(x.quality.warning.explicit.length,2);assert.equal(x.quality.warning.realizedClauses,1);assert.ok(x.quality.integration);assert.match(x.comment,/誠信|言行一致/);assert.match(x.comment,/學習專注/);assert.ok(x.quality.balance.ratio>.244-0.001);assert.ok(semesterCoverage(note,s,x.comment.replace(/誠信/g,'其他')).missingGoals.length>0);
+ const h=[];for(let i=0;i<8;i++){const v=deepGenerate(s,'待人有禮，但經常遲到、忘記打掃',h);assert.deepEqual(v.issues,[]);assert.deepEqual(v.coverage.missingGoals,[]);assert.deepEqual(v.coverage.missingStrengths,[]);assert.equal(v.quality.praise.stock,0);assert.equal(v.quality.warning.realizedClauses,1);h.push(v.comment);}assert.equal(new Set(h).size,8);
 });
