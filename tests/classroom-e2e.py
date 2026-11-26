@@ -82,11 +82,11 @@ def run(browser, url, tmp, mobile):
         rows=list(load_workbook(excel,read_only=True).active.values)
         assert len(rows)==47 and rows[0]==('學號','座號','姓名','評語')
         assert len({r[1] for r in rows[1:]})==46
-        assert all(42<=len(r[2])<=50 for r in rows[1:])
+        assert all(42<=len(r[3])<=50 for r in rows[1:])
         word=download('#menuDl','word','formal.docx')
         with zipfile.ZipFile(word) as z:
             body=''.join(ET.fromstring(z.read('word/document.xml')).itertext())
-        assert all(r[1] in body and r[2] in body for r in rows[1:])
+        assert all(r[2] in body and r[3] in body for r in rows[1:])
         tool('auditBtn')
         expect(page.locator('#auditSummary')).to_contain_text('46 / 46')
         page.locator('#closeAudit').click()
