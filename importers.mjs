@@ -4,7 +4,7 @@ const text=v=>String(v??'').trim();
 const header=v=>clean(v).replace(/\(5[-–~至]1\)$/,'').replace(/\(1[-–~至]5\)$/,'');
 const fields={seat:['座號','seat'],name:['姓名','學生姓名','name'],studentId:['學號','studentId']};
 export const seatKey=v=>/^\d+$/.test(clean(v))?String(Number(clean(v))):clean(v);
-export const score=v=>{const s=clean(v).replace('須再加油','需再加油');if(levels.includes(s))return levels.indexOf(s)+1;return /^[1-5]$/.test(s)?Number(s):null;};
+export const score=v=>{const raw=clean(v).replace('須再加油','需再加油'),s=['優良','良好','尚可'].includes(raw)?'表現'+raw:raw;if(levels.includes(s))return levels.indexOf(s)+1;return /^[1-5]$/.test(s)?Number(s):null;};
 const newRecord=(seat,name,studentId='')=>({id:crypto.randomUUID(),seat:text(seat),name:text(name),studentId:clean(studentId),scores:Array(6).fill(null),note:'',comment:'',rated:false,confirmed:false,legacy:{}});
 const append=(a,b)=>[...new Set([a,b].filter(Boolean))].join('；');
 export function parseSheet(rows,{allowNames=false}={}){

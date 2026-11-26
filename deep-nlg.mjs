@@ -716,7 +716,7 @@ function termPool(p,profile){
  const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
  const groups=p.goals.map(g=>[g]);
  for(let i=0;i<Math.min(p.goals.length,6);i++)for(let j=i+1;j<Math.min(p.goals.length,6);j++){
-  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&a.source==='等第'&&b.source==='等第')&&a.label!==b.label&&(a.dim!==b.dim||a.source==='觀察'&&b.source==='觀察'))groups.push([a,b]);
+  const a=p.goals[i],b=p.goals[j];if((p.observedGoals.length>=2||p.low<=2&&(a.source==='等第'||b.source==='等第'))&&a.label!==b.label&&(a.dim!==b.dim||a.source==='觀察'&&b.source==='觀察'))groups.push([a,b]);
  }
  const heads=[];
  for(const a of first){
