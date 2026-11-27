@@ -303,3 +303,30 @@ dialog textarea{width:100%;height:140px;margin:12px 0}
   .toolbar.quick{gap:6px;margin-top:6px}
   .toolbar.quick .btn{min-height:28px;min-width:0;padding:0 9px}
 }
+
+/* v1.12.1 UI 精修（設計員審視 2026-11-27）：只修版面與觸控，不改結構 */
+/* S1 桌機工作台真正單頁不捲動：split 的單列要可收縮，否則 .detail 被內容撐高而裁掉草稿與操作列 */
+@media(min-width:1000px){.split{grid-template-rows:minmax(0,1fr)}}
+/* S2 更多工具／下載選單項目靠左，圖示與文字對齊樹狀線 */
+.pi{justify-content:flex-start}
+/* S3 評分欄標題 4 字平均斷成 2＋2 */
+.rate-legend .lv span{text-wrap:balance}
+/* S6 原生選檔鈕套用按鈕樣式 */
+input[type=file]{max-width:100%;color:var(--ink2);font-size:13px}
+input[type=file]::file-selector-button{margin-right:10px;min-height:36px;padding:0 14px;border:1px solid var(--line2);border-radius:var(--r1);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;cursor:pointer;transition:border-color .14s}
+input[type=file]::file-selector-button:hover{border-color:var(--accent)}
+/* S7 設定頁收合區與後續標題之間留白 */
+.admin-panel>details{margin-bottom:14px}
+.admin-panel>details+h3{margin-top:18px}
+@media(max-width:639px){
+  /* S4 快速設定按鈕符合手機 .sm 高度 */
+  .toolbar.quick .btn{min-height:40px}
+  /* S5 評分卡標題與提示分兩行 */
+  .card h3{flex-wrap:wrap}.card h3 small{flex-basis:100%;margin-left:0;text-align:left}
+  /* S8 設定與歷史頁的控制項達觸控尺寸 */
+  .page input:not([type=checkbox]):not([type=file]),.page select,.page textarea{min-height:44px}
+  .admin-actions button,.trash-row button{min-height:40px}
+  input[type=file]::file-selector-button{min-height:44px}
+}
+@media(min-width:640px){.tools-pop{max-height:min(78vh,calc(100vh - 150px))}}
+#backup{margin-right:10px}
