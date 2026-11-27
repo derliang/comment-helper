@@ -91,6 +91,7 @@ def run(browser, url, tmp, mobile):
         expect(page.locator('#auditSummary')).to_contain_text('46 / 46')
         page.locator('#closeAudit').click()
         page.locator('[data-go="settings"]' if mobile else '[data-tab="settings"]').click()
+        page.locator('[data-sec="backup"]').click()
         backup=download(None,'backup','backup.json')
         data=json.loads(backup.read_text(encoding='utf-8'))
         assert len(data['projects'][0]['students'])==46
