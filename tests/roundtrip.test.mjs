@@ -8,3 +8,16 @@ test('CSV and TSV preserve seat padding and quotes, Excel numeric seat is equiva
 test('similar historical comments remain blocked and a changed return is rechecked',()=>{assert.ok(previewReturn([{code:'B1-S001',seat:'01',comment:c}],[b],p,[c]).entries[0].errors.includes('完整評語重複'));});
 
 test('explicit AI review failure is blocked and pending review requires opt-in',async()=>{const {parseReturnAudit}=await import('../roundtrip.mjs');const x={code:'B1-S001',seat:'01',comment:c};let a=parseReturnAudit([['資料代碼','結果'],[x.code,'未通過']]);assert.ok(previewReturn([x],[b],p,[],a).entries[0].errors.includes('AI 覆核未通過或紀錄衝突'));a=parseReturnAudit([['資料代碼','結果'],[x.code,'待教師核對']]);const row=previewReturn([x],[b],p,[],a).entries[0];assert.equal(row.errors.length,0);assert.ok(row.advisories.length);});
+
+test('issue #46: export file names carry the class name and date, strip illegal characters, and fall back to the plain name',async()=>{
+ const {exportFileName}=await import('../roundtrip.mjs');
+ assert.equal(exportFileName('三年甲班','期末評語','xlsx','2026-11-28'),'三年甲班_期末評語_20261128.xlsx');
+ assert.equal(exportFileName('三/年:甲*班?"<>|\\','期末評語','docx','2026-11-28'),'三年甲班_期末評語_20261128.docx');
+ assert.equal(exportFileName('  A  班 ','教師內部紀錄','xlsx','2026-01-05'),'A 班_教師內部紀錄_20260105.xlsx');
+ assert.equal(exportFileName('','期末評語','xlsx','2026-11-28'),'期末評語.xlsx');
+ assert.equal(exportFileName(undefined,'期末評語','xlsx','2026-11-28'),'期末評語.xlsx');
+ assert.equal(exportFileName('/:*?','期末評語','xlsx','2026-11-28'),'期末評語.xlsx');
+ assert.equal(exportFileName('..','期末評語','xlsx','2026-11-28'),'期末評語.xlsx');
+ assert.equal(exportFileName('班','期末評語','xlsx'),'班_期末評語.xlsx');
+ assert.ok(exportFileName('長'.repeat(100),'期末評語','xlsx','2026-11-28').startsWith('長'.repeat(40)+'_'));
+});
