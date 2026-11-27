@@ -1,13 +1,19 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {deepGenerate} from '../deep-nlg.mjs';
+import {deepGenerate,nlgStats} from '../deep-nlg.mjs';
 // Issue #35: observations such as 常遲到 used to take 5–10 s per deepGenerate (synchronous, so the page froze).
 // Candidate scoring is now lazy by evidence tier and impossible lengths are pruned early; the output must stay byte-identical.
-const SLOW_LIMIT_MS=5000;
-test('issue #35: slow-observation cases finish quickly and keep the same comment',()=>{
- for(const [scores,note] of [[[4,4,4,4,4,4],"常遲到，忘記帶課本"],[[4,2,4,5,4,4],"常遲到，忘記帶課本"],[[5,4,5,4,2,4],"常遲到，忘記帶課本"]]){
-  const t=performance.now(),r=deepGenerate(scores,note,[],{}),ms=performance.now()-t;
-  assert.equal(r.source,'deep');assert.ok(r.comment&&r.issues.length===0,scores.join('')+' must produce a valid comment');
-  assert.ok(ms<SLOW_LIMIT_MS,scores.join('')+' took '+Math.round(ms)+' ms (limit '+SLOW_LIMIT_MS+')');
+// Wall-clock limits are unreliable on a busy machine (other test files run in parallel), so the cost is pinned with deterministic work counters.
+// For 444444 + 常遲到 the old search ran 3.28 M record() attempts and 325 k termStatic() scorings (≈ 8 s); now ≈ 1.4 M and ≈ 67 k.
+test('issue #35: candidate search does a bounded amount of work for slow observations',()=>{
+ nlgStats.records=0;nlgStats.statics=0;
+ const r=deepGenerate([4,4,4,4,4,4],'常遲到，忘記帶課本',[],{});
+ assert.equal(r.source,'deep');assert.ok(r.comment&&r.issues.length===0);
+ assert.ok(nlgStats.records<2000000,'record() attempts: '+nlgStats.records);
+ assert.ok(nlgStats.statics<150000,'termStatic() scorings: '+nlgStats.statics);
+ for(const [scores,note] of [[[4,2,4,5,4,4],'常遲到，忘記帶課本'],[[5,4,5,4,2,4],'常遲到，忘記帶課本']]){
+  nlgStats.records=0;nlgStats.statics=0;
+  const x=deepGenerate(scores,note,[],{});assert.equal(x.source,'deep');assert.ok(x.comment&&x.issues.length===0);
+  assert.ok(nlgStats.records<1700000&&nlgStats.statics<150000,scores.join('')+' '+nlgStats.records+' / '+nlgStats.statics);
  }
 });
 // Snapshot taken from the implementation before the optimisation (same inputs, same history). Any change here means ranking changed.

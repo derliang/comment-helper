@@ -784,6 +784,8 @@ function jointDevelopmentCoverage(goals,comment){
  }
  return covered;
 }
+// Work counters (cheap, deterministic) so tests can pin the cost of candidate search without depending on wall-clock speed.
+export const nlgStats={records:0,statics:0};
 function termPool(p,profile){
  const out=new Map(),leads=termLeads(profile),first=(p.observed.length?p.observed:p.strengths).slice(0,12),second=p.strengths.slice(0,20);
  const groups=p.goals.map(g=>[g]);
@@ -826,6 +828,7 @@ function termPool(p,profile){
   return h.ok;
  };
  const record=(head,gg,surfaces,lead,tail,sep,bridge=false,warnings=[],contrast='',variant=false,goalJoiner='，並',syntax='',joint=null)=>{
+  nlgStats.records++;
   if(!headOk(head))return;
   const goal=joint?joint.direction:surfaces.join(goalJoiner),warning=joint?joint.warning:warnings.map(w=>w.text).join('，'),expectation=lead+goal+(tail?'，'+tail:'')+'。';
   // Keep exact evidence phrases; only rearrange grammatical, compatible slots.
@@ -1035,6 +1038,7 @@ function termTier(c,p){
 }
 const termTierOrder=(a,b)=>b.warningCoverage-a.warningCoverage||b.goalCoverage-a.goalCoverage||b.coverage-a.coverage||b.priority-a.priority;
 function termStatic(c,p,tier){
+ nlgStats.statics++;
  const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步','相處','人際','互動','能維持','人我','整潔','規範','言行','守時','承擔','主動','學習'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
  const grade=c.ss.filter(e=>e.source==='等第').reduce((n,e)=>n+e.grade-2,0),balance=c.ss.every(x=>x.source==='中性')?0:-Math.abs(c.headLen-22)*.3,mismatch=p.focus==='延續優勢'&&c.ss.some(e=>c.gg.some(g=>g.dim===e.dim))?1:0;
  let coherence=0;
