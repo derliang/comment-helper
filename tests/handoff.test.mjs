@@ -8,3 +8,14 @@ test('handoff data cannot close JSON fence',()=>{const fence=String.fromCharCode
 test('handoff rubric is a contiguous Markdown table and explicit failure disposition',()=>{assert.match(HANDOFF_RULES,/\| 向度.*\n\|---.*\n\| 日常生活表現/);assert.match(HANDOFF_RULES,/任何項目為 0 不得標為通過/);assert.match(HANDOFF_RULES,/未通過，正式評語欄須留空/);});
 
 test('selected polish handoff preserves batch code, includes current comment and private mapping',()=>{const q={...p,students:[{...p.students[0],comment:'原始評語'},...p.students.slice(1)]};const h=createHandoff(q,[],[q],{},{scope:'selected',selected:['a'],task:'polish',batchId:'B123'});assert.equal(h.data.targets.length,1);assert.equal(h.data.targets[0].code,'B123-S001');assert.equal(h.data.targets[0].currentComment,'原始評語');assert.equal(h.mapping[0].id,'a');assert.ok(!h.markdown.includes('"snapshot"'));assert.match(h.command,/潤飾現有評語/);});
+
+test('issue #45: handoff batches are capped to the most recent ones and the input is not mutated',async()=>{
+ const {trimHandoffBatches,HANDOFF_BATCH_LIMIT}=await import('../handoff.mjs');
+ const batches=Array.from({length:HANDOFF_BATCH_LIMIT+7},(_,i)=>({id:'b'+i}));
+ const kept=trimHandoffBatches(batches);
+ assert.equal(kept.length,HANDOFF_BATCH_LIMIT);assert.equal(kept[0].id,'b7');assert.equal(kept.at(-1).id,'b'+(HANDOFF_BATCH_LIMIT+6));
+ assert.equal(batches.length,HANDOFF_BATCH_LIMIT+7);
+ assert.equal(trimHandoffBatches(batches,3).map(b=>b.id).join(),'b'+(HANDOFF_BATCH_LIMIT+4)+',b'+(HANDOFF_BATCH_LIMIT+5)+',b'+(HANDOFF_BATCH_LIMIT+6));
+ const few=[{id:'x'}];assert.equal(trimHandoffBatches(few),few);
+ assert.equal(trimHandoffBatches(undefined),undefined);
+});
