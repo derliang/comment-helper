@@ -329,4 +329,60 @@ input[type=file]::file-selector-button:hover{border-color:var(--accent)}
   input[type=file]::file-selector-button{min-height:44px}
 }
 @media(min-width:640px){.tools-pop{max-height:min(78vh,calc(100vh - 150px))}}
-#backup{margin-right:10px}
+
+
+/* v1.12.1 UI 結構調整（設計員 PR-B，2026-11-28）：歷史與風格頁、設定與備份頁依定案模擬頁重做；手機單列情境列與底部選單 */
+.ph{margin-bottom:2px}.page .ph h2{margin:0;font-size:22px}.page .ph p{margin:2px 0 0;color:var(--ink2)}
+.page{display:grid;gap:16px;align-content:start}
+.page .card h3,.page .admin-panel h3{margin:0 0 10px;font-size:14px}
+.page .cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;align-items:start}
+.stepno{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;font-weight:700;flex:none}
+.drop{border:1.5px dashed var(--line2);border-radius:var(--r2);padding:14px;text-align:center;color:var(--ink2);background:var(--bg)}
+.drop input[type=file]{max-width:100%}
+.page .card .field{display:grid;gap:5px;margin:10px 0 0;font-size:13px}
+.page .card .field textarea{margin:0;min-height:76px}
+.page .card>.btn.pri{margin-top:10px}
+.page .card>.note2{margin:10px 0 0}
+.sub-h{margin:14px 0 6px;font-size:13px;color:var(--ink2);font-weight:650}
+.profile p{margin:4px 0}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}.tag{background:var(--sunken);border-radius:var(--r1);padding:2px 9px;font-size:13px}
+.page .cols .style-metrics{margin:0 0 6px}
+#styleEditor{margin-top:6px}
+.page .card>.search{margin-bottom:10px}
+.historyItem .hi-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.historyItem label{display:flex;align-items:center;gap:8px;margin:6px 0 0;font-size:13px}
+.historyItem input{min-width:0;flex:1;max-width:220px}
+.empty-note{padding:18px 0;text-align:center}
+.page .search{display:flex;margin:0 0 10px}.page .search input{min-height:0;margin:0;border:0;width:auto;flex:1}
+#profile.profile{white-space:normal;background:none;border:0;padding:0}
+#styleVersionSelect{min-width:150px;flex:1 1 150px;max-width:260px}
+.page .historyItem label input{width:auto;flex:1;max-width:220px}
+
+.page .sgrid{display:grid;grid-template-columns:190px minmax(0,1fr);gap:20px;align-items:start}
+.subnav{display:flex;flex-direction:column;gap:2px;position:sticky;top:72px}
+.subnav button{justify-content:flex-start;border:0;background:none;text-align:left;padding:9px 12px;min-height:40px;border-radius:var(--r1);font-weight:600;color:var(--ink2)}
+.subnav button:hover{background:var(--sunken);color:var(--ink)}
+.subnav button[aria-current=true]{background:var(--accent-soft);color:var(--accent-d)}
+.panels{display:grid;gap:14px;min-width:0}.panels>.admin-panel{margin:0}
+.admin-panel>details>summary,.trash-panel>summary{cursor:pointer;font-weight:650;min-height:36px;display:flex;align-items:center}
+.admin-panel>.toolbar:first-of-type{margin-top:0}
+:root{--scrim:#16332680}
+dialog::backdrop{background:var(--scrim)}
+@media(max-width:999px){
+  .page .cols,.page .sgrid{grid-template-columns:minmax(0,1fr)}
+  .subnav{flex-direction:row;overflow-x:auto;position:static;border-bottom:1px solid var(--line);padding-bottom:6px;gap:4px}
+  .subnav button{white-space:nowrap;flex:none}
+}
+/* L2 手機：情境列單列、選單改為底部滑出（含遮罩） */
+@media(max-width:639px){
+  .ctx{flex-wrap:nowrap;gap:8px;padding:8px 14px}
+  .ctx .sel{flex:1 1 0;min-width:0;text-overflow:ellipsis}
+  .acts{width:auto;flex:none;gap:6px}
+  .acts>.btn,.acts>.menu{flex:none}.acts>.menu>summary{width:auto}
+  .acts .btn{padding:0 10px}.opt{display:none}
+  .menu[open]::before{content:"";position:fixed;inset:0;z-index:30;background:var(--scrim)}
+  .menu .pop,.menu .tools-pop{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;max-height:80vh;z-index:31;border:0;border-radius:var(--r3) var(--r3) 0 0;padding:8px 8px calc(12px + env(safe-area-inset-bottom));animation:sheet-up .2s ease}
+  .menu .pop::before{content:"";display:block;width:36px;height:4px;border-radius:99px;background:var(--line2);margin:2px auto 8px}
+  .admin-panel>details>summary,.trash-panel>summary{min-height:44px}
+}
+@keyframes sheet-up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
