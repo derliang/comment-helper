@@ -54,3 +54,12 @@ export function previewReturn(rows,batches,project,history=[],audit=new Map()){
  const batch=batches.find(b=>used.has(b.id));const missing=batch?batch.mapping.filter(m=>!counts.has(m.code)).map(m=>m.code):[];
  return {entries,missing};
 }
+
+// Export file name: 班級名_項目_YYYYMMDD.ext. Characters Windows/macOS do not allow in file names are dropped; with no usable class name the
+// original plain name (項目.ext) is kept (issue #46). `date` is an ISO date string such as 2026-11-28 (or empty to omit it).
+export function exportFileName(className,base,ext,date=''){
+ const name=String(className??'').replace(/[\\/:*?"<>|\u0000-\u001f\u007f]/g,'').replace(/\s+/g,' ').trim().replace(/^\.+|\.+$/g,'').slice(0,40).trim();
+ if(!name)return base+'.'+ext;
+ const stamp=String(date||'').replace(/\D/g,'');
+ return name+'_'+base+(stamp?'_'+stamp:'')+'.'+ext;
+}

@@ -61,3 +61,8 @@ export function taskInstruction(task){
  return (descriptions[task]||descriptions.generate)+' 保留資料代碼完整字串（含批次前綴），座號為文字，不修改學生名單。先肯定有證據的優點，再用建議、期許、希望委婉點出成長方向；無可證實優點時用尊重的中性開頭，不虛構。避免公式化、過度華麗與重複的 AI 式語氣。品質覆評任務的原文回傳屬檢查資料，不代表合格正式評語。';
 }
 export function handoffCommand(task){return task==='generate'?HANDOFF_COMMAND:'請依附件執行「'+(TASK_NAMES[task]||TASK_NAMES.generate)+'」，保留完整資料代碼與原始評分，依現行六向度規則完成獨立覆評與全班去重，輸出指定 Excel 或 TSV 與覆核紀錄。'+(task==='review'?'只覆評，不改寫原評語。':'不虛構事實，先肯定後期許，避免公式化語氣。');}
+
+// db.handoffBatches used to grow forever (each batch carries a per-student snapshot) and slowly filled localStorage (issue #45).
+// Keep only the most recent batches; a return file for an older batch is reported as "unknown batch" by previewReturn.
+export const HANDOFF_BATCH_LIMIT=50;
+export function trimHandoffBatches(batches,limit=HANDOFF_BATCH_LIMIT){return Array.isArray(batches)&&batches.length>limit?batches.slice(batches.length-limit):batches;}

@@ -1,7 +1,0 @@
-.git
-.env*
-site
-node_modules
-*.xlsx
-*.docx
-*backup.json
