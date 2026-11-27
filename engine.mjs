@@ -1,6 +1,7 @@
 export const dims=['日常生活表現','整潔習慣','禮節','班級服務','待人誠信','自律自重'];
 export const levels=['亟待改進','需再加油','表現尚可','表現良好','表現優良'];
-export const length=s=>Array.from(s).length;
+// Count code points (same result as Array.from(s).length) without allocating: this runs in the hottest loops of deepGenerate.
+export const length=s=>{if(typeof s!=='string')return Array.from(s).length;let n=s.length;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);if(c>=0xD800&&c<=0xDBFF&&i+1<s.length){const d=s.charCodeAt(i+1);if(d>=0xDC00&&d<=0xDFFF){n--;i++;}}}return n;};
 export const complete=s=>Array.isArray(s)&&s.length===6&&s.every(v=>Number.isInteger(v)&&v>=1&&v<=5);
 export const average=s=>complete(s)?s.reduce((a,b)=>a+b,0)/6:null;
 export const normalize=s=>s.normalize('NFKC').replace(/[\p{P}\p{Z}\s]/gu,'');

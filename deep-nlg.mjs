@@ -815,9 +815,18 @@ function termPool(p,profile){
    }
   }
  }
+ // record() runs millions of times per plan: judge each head once (per text) instead of allocating filter/every/some closures on every call.
+ const headOk=h=>{
+  if(h.okFor!==h.text){
+   h.okFor=h.text;let ok=true;
+   for(const e of h.ss)if(e.source==='觀察'&&!h.text.includes(e.phrase)){ok=false;break;}
+   if(ok)for(const e of h.ss)if(e.source==='等第'&&(e.grade<3||p.blockedGradeDimensions.includes(e.dim))){ok=false;break;}
+   h.ok=ok;
+  }
+  return h.ok;
+ };
  const record=(head,gg,surfaces,lead,tail,sep,bridge=false,warnings=[],contrast='',variant=false,goalJoiner='，並',syntax='',joint=null)=>{
-  if(!head.ss.filter(e=>e.source==='觀察').every(e=>head.text.includes(e.phrase)))return;
-  if(head.ss.some(e=>e.source==='等第'&&(e.grade<3||p.blockedGradeDimensions.includes(e.dim))))return;
+  if(!headOk(head))return;
   const goal=joint?joint.direction:surfaces.join(goalJoiner),warning=joint?joint.warning:warnings.map(w=>w.text).join('，'),expectation=lead+goal+(tail?'，'+tail:'')+'。';
   // Keep exact evidence phrases; only rearrange grammatical, compatible slots.
   let text=head.text+sep+(warning?contrast+warning+'，':'')+expectation;
@@ -826,6 +835,7 @@ function termPool(p,profile){
   if(syntax==='承接雙段')text=head.text+'。'+warning+'；'+expectation;
   if(syntax==='讓步轉折')text='雖'+head.text+'，惟'+warning+'；'+expectation;
   const n=length(text);
+  if(n<42||n>50)return; // cheapest reject first (about three quarters of all candidates)
   // Punctuality must name the actual habit, not disappear into generic time management.
   if(gg.some((g,i)=>{const domain=g.id==='punctual'?/守時/:g.id==='focus'?/學習專注/:null;return domain&&!domain.test((warnings.find(w=>w.id===g.id)?.text||'')+surfaces[i]);}))return;
   if(syntax&&(!warning||head.ss.some(e=>e.source==='中性')))return;
@@ -862,8 +872,13 @@ function termPool(p,profile){
   if(flagged.length){
    const warningSets=flagged.length===1?flagged[0].warningVariants.map(text=>[{id:flagged[0].id,text}]):[...flagged[0].warningVariants.slice(0,2),flagged[0].warningVariants.at(-1)].flatMap(x=>[...flagged[1].warningVariants.slice(0,2),flagged[1].warningVariants.at(-1)].map(y=>[{id:flagged[0].id,text:x},{id:flagged[1].id,text:y}]));
    const directions=gg.length===1?(a.warningDirections?.length?a.warningDirections:a.variants.slice(0,3)).map(v=>[v]):(a.warningDirections?.length?unique([...a.warningDirections.slice(0,2),a.warningDirections.at(-1)]):a.variants.slice(0,2)).flatMap(x=>(gg[1].warningDirections?.length?unique([...gg[1].warningDirections.slice(0,2),gg[1].warningDirections.at(-1)]):gg[1].variants.slice(0,2)).map(y=>[x,y]));
+   const headLen=length(head.text);
    for(const warnings of warningSets){
+    // Every text built from this head and warning set contains head + warning + goal + a lead of at least 2 characters + at least 3 punctuation
+    // marks, and no variant shortens the head or the goal joiner (min 2). When even that floor exceeds 50 characters nothing below can pass.
+    const warningLen=warnings.reduce((n,w)=>n+length(w.text),0)+warnings.length-1;
     for(const surfaces of directions){
+     if(headLen+warningLen+surfaces.reduce((n,v)=>n+length(v),0)+2*(surfaces.length-1)+5>50)continue;
      for(const l of ['期許能','盼能','期盼能','希望能','期待能']){add(head,gg,surfaces,l,'','；',false,warnings);add(head,gg,surfaces,l,'','。',false,warnings);}
      if(gg.length===1)for(const tail of termConsequences(a,p.focus))add(head,gg,surfaces,'若能',tail,'；',false,warnings);
     }
@@ -888,8 +903,13 @@ const termCache=new Map();
 function termCandidates(p,profile){
  const small={focus:p.focus,low:p.low,blockedGradeDimensions:p.blockedGradeDimensions||[],strengths:p.strengths.map(slot),observed:p.observed.map(slot),goals:p.goals.map(e=>({...slot(e),label:e.label,variants:e.variants,warningVariants:e.warningVariants,warningDirections:e.warningDirections,tone:e.tone})),observedGoals:p.observedGoals.map(slot)};
  const key=JSON.stringify([small,termLeads(profile)]);
- if(termCache.has(key)){const a=termCache.get(key);termCache.delete(key);termCache.set(key,a);return a;}
- const a=termPool(small,profile).map(c=>termStatic(c,small));if(a.length<=48000&&key.length<=16000){termCache.set(key,a);let total=[...termCache.values()].reduce((n,v)=>n+v.length,0);while(termCache.size>8||total>55000){const k=termCache.keys().next().value;total-=termCache.get(k).length;termCache.delete(k);}}return a;
+ if(termCache.has(key)){const a=termCache.get(key);termCache.delete(key);termCache.set(key,a);return a.groups;}
+ // Tiers (evidence coverage) are cheap; the expensive static scoring is deferred until a tier is actually consulted.
+ const pool=termPool(small,profile),entries=pool.map(c=>({c,small,tier:termTier(c,small),st:null}));
+ entries.sort((x,y)=>termTierOrder(x.tier,y.tier));
+ const groups=[];for(const e of entries){const g=groups.at(-1);if(g&&termTierOrder(g[0].tier,e.tier)===0)g.push(e);else groups.push([e]);}
+ const a={groups,length:pool.length};
+ if(a.length<=48000&&key.length<=16000){termCache.set(key,a);let total=[...termCache.values()].reduce((n,v)=>n+v.length,0);while(termCache.size>8||total>55000){const k=termCache.keys().next().value;total-=termCache.get(k).length;termCache.delete(k);}}return groups;
 }
 // History-only semantic fingerprints. Neither history nor fingerprint tags
 // add any student evidence. Distinct paraphrases of the same topic count once.
@@ -1008,8 +1028,13 @@ export function semesterPraiseQuality(head){
  const repeats=Math.max(0,(text.match(/表現良好|良好表現|表現亦良好|表現也良好/g)||[]).length-1);
  return {stock,repeats,penalty:stock*5+repeats*2.8};
 }
-function termStatic(c,p){
+// Cheap ranking tier (evidence coverage). Candidates are ranked by this tuple before any style score.
+function termTier(c,p){
  const selected=[...c.ss,...c.gg],covered=[...p.observed,...p.goals.filter(x=>x.source==='觀察')].filter(e=>selected.some(x=>x.kind===e.kind&&x.id===e.id&&x.phrase===e.phrase)||e.kind==='goal'&&c.surfaces.some(v=>e.variants?.includes(v)||c.bridge&&bridgesFor(e).some(b=>b.variants.includes(v))));
+ return {warningCoverage:c.warnings?.length||0,goalCoverage:covered.filter(e=>e.kind==='goal').length,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0)};
+}
+const termTierOrder=(a,b)=>b.warningCoverage-a.warningCoverage||b.goalCoverage-a.goalCoverage||b.coverage-a.coverage||b.priority-a.priority;
+function termStatic(c,p,tier){
  const parts=splitText(c.text),shape=(c.text.match(/[，；。！？]/g)||[]).join(''),dup=['生活','穩定','成熟','責任','表現','習慣','自我要求','更加','持續','團體','待人','逐步','相處','人際','互動','能維持','人我','整潔','規範','言行','守時','承擔','主動','學習'].reduce((n,w)=>n+Math.max(0,c.text.split(w).length-2),0);
  const grade=c.ss.filter(e=>e.source==='等第').reduce((n,e)=>n+e.grade-2,0),balance=c.ss.every(x=>x.source==='中性')?0:-Math.abs(c.headLen-22)*.3,mismatch=p.focus==='延續優勢'&&c.ss.some(e=>c.gg.some(g=>g.dim===e.dim))?1:0;
  let coherence=0;
@@ -1033,7 +1058,7 @@ function termStatic(c,p){
  const toneFit=(c.warnings||[]).reduce((n,w)=>{const g=c.gg.find(g=>g.id===w.id);return n+(g?.tone===warningToneOf(w.text)?3.2:0);},0);
  const portraitBonus=(c.fused?2.2:0)+natural+(c.bridge?8:0)+(relation==='延續所長'?2.5:0)+toneFit;
  const semantic=semesterSemanticSignature(c.text),styleFeatures=semesterStyleFeatures(c.text,structure,semantic);
- return {...c,composition,structure,wording,praiseQuality,semantic,styleFeatures,warningCoverage:c.warnings?.length||0,goalCoverage:covered.filter(e=>e.kind==='goal').length,coverage:covered.length,priority:covered.reduce((n,e)=>n+evidenceWeight(e),0),open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty-parallelModal-repeatedCausative-bureaucratic-genericTail-overlap-repeatedTail-crossClause+portraitBonus-composition.penalty-wording.penalty-praiseQuality.penalty+(c.joint?12:0)+(c.joint&&c.integratedPraise?2.4:0)-(c.warnings?.length>1&&!c.joint?5:0)-(c.variant?.35:0),relation,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:termConditionPattern.test(c.text),wish:/希望|期許|期待|期盼|盼望|盼能|期望/.test(c.text)};
+ return {...c,composition,structure,wording,praiseQuality,semantic,styleFeatures,warningCoverage:tier.warningCoverage,goalCoverage:tier.goalCoverage,coverage:tier.coverage,priority:tier.priority,open:parts[0],end:parts.at(-1),shape,connector:connectiveFamily(c.text),base:grade+balance+coherence-dup*1.6-mismatch-Math.abs(c.n-48)*.25-(c.tail?0.6:0)-redundantOutcome-repeatedDevelopment-degreePenalty-parallelModal-repeatedCausative-bureaucratic-genericTail-overlap-repeatedTail-crossClause+portraitBonus-composition.penalty-wording.penalty-praiseQuality.penalty+(c.joint?12:0)+(c.joint&&c.integratedPraise?2.4:0)-(c.warnings?.length>1&&!c.joint?5:0)-(c.variant?.35:0),relation,semicolon:c.text.includes('；'),twoSentences:c.text.split('。').length>2,conditional:termConditionPattern.test(c.text),wish:/希望|期許|期待|期盼|盼望|盼能|期望/.test(c.text)};
 }
 function termScore(c,profile,div,localStyle){
  const diversity=-(div.openings.get(c.open)||0)*.8-(div.endings.get(c.end)||0)*.6-(div.connectives.get(c.connector)||0)*.15-(div.shapes.get(c.shape)||0)*.05;
@@ -1078,8 +1103,13 @@ export function deepGenerate(scores,note='',history=[],profile={}){
  const p=semesterPlan(scores,note,profile);
  if(!p.evidence.complete)return {comment:'',source:'incomplete',characters:0,plan:p,chosenStrengths:[],chosenGoals:[],issues:['評分未完成'],coverage:{recognized:0,missingStrengths:[],missingGoals:[],deferred:p.deferred},quality:{}};
  const div=semesterHistoryDiversity(history),hf=history.map(similarityFeatures),localStyle=semesterStyleModel(profile);
- const ranked=termCandidates(p,profile).map(c=>({c,score:termScore(c,profile,div,localStyle)})).sort((a,b)=>b.c.warningCoverage-a.c.warningCoverage||b.c.goalCoverage-a.c.goalCoverage||b.c.coverage-a.c.coverage||b.c.priority-a.c.priority||b.score-a.score);
- const selection=selectSemesterCandidate(ranked,hf,localStyle),best=selection.best,comment=best?.text||'';
+ // Rank tier by tier (highest evidence coverage first); a lower tier is only scored when every candidate above it is rejected.
+ let selection={best:null,adaptation:{applied:false,reason:'無合規候選'}};
+ for(const group of termCandidates(p,profile)){
+  const ranked=group.map(e=>{const c=e.st??=termStatic(e.c,e.small,e.tier);return {c,score:termScore(c,profile,div,localStyle)};}).sort((a,b)=>b.score-a.score);
+  selection=selectSemesterCandidate(ranked,hf,localStyle);if(selection.best)break;
+ }
+ const best=selection.best,comment=best?.text||'';
  const coverage=semesterCoverage(note,scores,comment,profile.semanticRules||[]);
  const chosenStrengths=(best?.ss||[]).map(e=>({phrase:e.phrase,source:e.source,dimension:dims[e.dim]||'補充觀察'}));
  const chosenGoals=(best?.gg||[]).map((e,i)=>({phrase:best.surfaces[i],canonical:e.phrase,concept:e.label,source:e.source,dimension:dims[e.dim]||'補充觀察',frequency:e.frequency||'未明'}));
