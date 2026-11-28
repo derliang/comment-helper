@@ -1,0 +1,277 @@
+<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- 草稿：評分流程改版稿（1A／1B／1C），只含假資料，討論用、未定案。說明見 docs/design/WORKFLOW-REDESIGN.md -->
+<title>評分流程改版稿</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 版面概念：評分與評語同畫面，評完即出現建議，一個主按鈕「接受並下一位」。視覺沿用 DESIGN.md tokens（僅淺色，專案刻意單一外觀）。 */
+:root{
+  --font:system-ui,"Noto Sans TC","Microsoft JhengHei",sans-serif;
+  --page:#dde4e1;--bg:#f3f6f4;--surface:#ffffff;--sunken:#eaf0ed;
+  --ink:#17302b;--ink2:#4b5f59;--line:#dbe3e0;--line2:#bfcbc7;
+  --accent:#14604d;--accent-d:#0e4a3b;--accent-soft:#e2f0ea;
+  --done-fg:#1f6b42;--done-bg:#e0f2e6;--doing-fg:#8a5a0c;--doing-bg:#fdeed0;--new-fg:#52645e;--new-bg:#e9eeec;
+  --warn-fg:#7d4f0b;--warn-bg:#fff3dc;
+  --c5:#16a34a;--p5:#dcfce7;--t5:#15803d;--c4:#84cc16;--p4:#ecfccb;--t4:#53782d;--c3:#eab308;--p3:#fef9c3;--t3:#8a6a10;
+  --c2:#f97316;--p2:#ffedd5;--t2:#b45309;--c1:#dc2626;--p1:#fee2e2;--t1:#b91c1c;
+  --r1:6px;--r2:10px;--r3:14px;--pop:0 10px 30px #12312a2e;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{background:var(--page);color:var(--ink)}
+body{margin:0;font:14px/1.6 var(--font);padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1320px;margin:0 auto}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:18px;margin:0}h3{font-size:14px;margin:0}
+.muted{color:var(--ink2)}.num{font-variant-numeric:tabular-nums}
+.head p{margin:2px 0;max-width:80ch}
+.map{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0;padding:0;list-style:none}
+.map a{display:block;padding:6px 12px;border-radius:99px;background:var(--surface);border:1px solid var(--line2);color:var(--ink);text-decoration:none;font-weight:650}
+.map a:hover{border-color:var(--accent);color:var(--accent-d)}
+.plan{margin-top:28px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r3);padding:18px 20px 22px}
+.plan>header{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;margin-bottom:6px}
+.plan .tag{display:inline-block;background:var(--ink);color:#fff;border-radius:99px;padding:1px 10px;font-weight:700}
+.plan .sum{margin:4px 0 10px;max-width:90ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:10px 0 16px}
+.facts div{background:var(--sunken);border-radius:var(--r2);padding:10px 12px}
+.facts b{display:block;font-size:12px;color:var(--ink2);margin-bottom:2px}
+.devs{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.devcol{min-width:0}
+.devcol>.cap{font-size:12px;font-weight:650;color:var(--ink2);margin:0 0 6px}
+.devwrap{position:relative;overflow:hidden}
+.dev{position:absolute;left:0;top:0;transform-origin:0 0;background:var(--bg);border:1px solid var(--line2);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+.dev button{font:inherit;cursor:pointer}
+.dev button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* 元件（照 DESIGN.md） */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:0 14px;border:1px solid var(--line2);background:var(--surface);border-radius:var(--r1);font-weight:600;white-space:nowrap;color:var(--ink)}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}.btn.pri:hover{background:var(--accent-d)}
+.btn.sub{background:var(--accent-soft);border-color:#b9d8cb;color:var(--accent-d)}
+.btn.ghost{border-color:transparent;background:transparent}.btn.ghost:hover{background:var(--sunken)}
+.btn.sm{min-height:30px;padding:0 10px;font-size:13px}
+.btn.lg{min-height:52px;font-size:16px;padding:0 20px}
+.chip{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:650;line-height:1.6;white-space:nowrap}
+.chip.done{background:var(--done-bg);color:var(--done-fg)}.chip.doing{background:var(--doing-bg);color:var(--doing-fg)}.chip.new{background:var(--new-bg);color:var(--new-fg)}
+.chip.ok{background:var(--done-bg);color:var(--done-fg)}.chip.soft{background:var(--accent-soft);color:var(--accent-d)}
+.top{display:flex;align-items:center;gap:20px;height:56px;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:15px;white-space:nowrap}
+.mark{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:750}
+.tabs{display:flex;gap:4px;height:100%}
+.tab{display:flex;align-items:center;padding:0 14px;border-bottom:3px solid transparent;font-weight:600;color:var(--ink2)}
+.tab.on{color:var(--accent-d);border-bottom-color:var(--accent)}
+.saved{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--done-fg);font-weight:600}
+.saved i{width:7px;height:7px;border-radius:50%;background:var(--c5)}
+.ctx{display:flex;align-items:center;gap:14px;padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+.sel{min-height:36px;padding:0 12px;border:1px solid var(--line2);border-radius:var(--r1);background:var(--surface);font-weight:650;display:flex;align-items:center}
+.prog{flex:1;display:flex;align-items:center;gap:10px;min-width:0}
+.bar{flex:1;max-width:320px;height:8px;border-radius:99px;background:var(--sunken);overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.work{flex:1;min-height:0;display:flex}
+.roster{width:250px;flex:none;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column}
+.roster h3{padding:12px 14px 8px}
+.rrow{display:flex;align-items:center;gap:10px;padding:8px 14px;border-top:1px solid var(--line);min-height:44px}
+.rrow.sel2{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent);font-weight:700}
+.rrow .no{width:22px;color:var(--ink2);text-align:right}
+.rrow .chip{margin-left:auto}
+.main{flex:1;min-width:0;padding:16px 20px;display:flex;flex-direction:column;gap:12px;overflow:hidden}
+.dh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dh h2{font-size:20px}.dh .sp{margin-left:auto;display:flex;align-items:center;gap:10px}
+.star{font-weight:700;color:var(--doing-fg)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r3);padding:14px 16px}
+.card>h3{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.card>h3 small{font-weight:400;color:var(--ink2);font-size:12px}
+/* 評分列 */
+.legend{display:grid;gap:6px;color:var(--ink2);font-size:12px;text-align:center}
+.rate{display:grid;align-items:center;gap:8px 10px}
+.rate .lab{font-weight:650}
+.lv{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.k{height:var(--kh,40px);border:1px solid;border-radius:var(--r1);font-weight:750;font-size:16px;line-height:1}
+.k.v5{background:var(--p5);color:var(--t5);border-color:#bde9c9}.k.v4{background:var(--p4);color:var(--t4);border-color:#d6ec9c}
+.k.v3{background:var(--p3);color:var(--t3);border-color:#f0e08f}.k.v2{background:var(--p2);color:var(--t2);border-color:#f9cfa6}.k.v1{background:var(--p1);color:var(--t1);border-color:#f6bcbc}
+.k[aria-pressed=true]{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink);border-color:transparent}
+.k.v5[aria-pressed=true]{background:var(--c5);color:#fff}.k.v4[aria-pressed=true]{background:var(--c4);color:var(--ink)}
+.k.v3[aria-pressed=true]{background:var(--c3);color:var(--ink)}.k.v2[aria-pressed=true]{background:var(--c2);color:#fff}.k.v1[aria-pressed=true]{background:var(--c1);color:#fff}
+.lvt{font-size:12px;color:var(--ink2)}
+/* 評語建議 */
+.draft{background:var(--accent-soft);border:1px solid #c5ddd1;border-radius:var(--r2);padding:12px 14px;font-size:15px;line-height:1.9}
+.gauge{display:flex;align-items:center;gap:10px;margin:8px 0 12px;font-size:13px}
+.gauge .g{position:relative;flex:1;height:8px;border-radius:99px;background:var(--sunken)}
+.gauge .g b{position:absolute;left:84%;width:16%;top:0;bottom:0;background:#b7dcc6;border-radius:0 99px 99px 0}
+.gauge .g u{position:absolute;left:99%;top:-3px;bottom:-3px;width:3px;background:var(--ink);border-radius:2px}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts .grow{flex:1}
+.addnote{display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line2);border-radius:99px;padding:4px 12px;color:var(--ink2);background:transparent;font-weight:600}
+/* 手機 */
+.pbar{display:flex;align-items:center;gap:8px;height:52px;padding:0 12px;background:var(--surface);border-bottom:1px solid var(--line);flex:none}
+.pscroll{flex:1;min-height:0;overflow:hidden;padding:8px 12px;display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:64px 1fr;gap:10px;align-items:center}.prow .lab{font-size:13px;font-weight:650}.prows{display:grid;gap:4px}
+.pc{padding:8px 12px}.pc .draft{padding:8px 10px;font-size:14px;line-height:1.6}.pc .cnt{display:flex;align-items:center;gap:8px;margin:4px 0 6px;font-size:12px}
+.pact{flex:none;padding:10px 14px;background:var(--surface);border-top:1px solid var(--line);display:flex;gap:8px}
+.tabbar{flex:none;display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);border-top:1px solid var(--line)}
+.tabbar span{display:flex;align-items:center;justify-content:center;min-height:56px;font-size:12px;font-weight:600;color:var(--ink2);border-top:3px solid transparent;margin-top:-1px}
+.tabbar span.on{color:var(--accent-d);border-top-color:var(--accent)}
+.strip{display:flex;gap:8px;overflow:hidden;padding:2px 2px 4px}
+.dot{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:700;border:2px solid transparent}
+.dot.done{background:var(--done-bg);color:var(--done-fg)}.dot.new{background:var(--new-bg);color:var(--new-fg)}.dot.doing{background:var(--doing-bg);color:var(--doing-fg)}
+.dot.cur{border-color:var(--ink);box-shadow:0 0 0 2px var(--surface) inset}
+.summ{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.sv{min-width:34px;height:34px;padding:0 6px;border-radius:var(--r1);display:inline-grid;place-items:center;font-weight:750;border:1px solid}
+.sv.v5{background:var(--c5);color:#fff;border-color:var(--c5)}.sv.v4{background:var(--c4);color:var(--ink);border-color:var(--c4)}.sv.v3{background:var(--c3);color:var(--ink);border-color:var(--c3)}
+.base{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.bk{height:56px;border-radius:var(--r2);border:1px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:750;font-size:18px;line-height:1}
+.bk small{font-size:11px;font-weight:600}
+.bk.v5{background:var(--p5);color:var(--t5);border-color:#bde9c9}.bk.v4{background:var(--p4);color:var(--t4);border-color:#d6ec9c}.bk.v3{background:var(--p3);color:var(--t3);border-color:#f0e08f}.bk.v2{background:var(--p2);color:var(--t2);border-color:#f9cfa6}.bk.v1{background:var(--p1);color:var(--t1);border-color:#f6bcbc}
+.bk[aria-pressed=true].v4{background:var(--c4);color:var(--ink);border-color:transparent;box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+.exc{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:10px;padding:5px 0;border-top:1px solid var(--line)}
+.exc:first-of-type{border-top:0}
+.pill{padding:0 10px;height:30px;border-radius:99px;display:inline-grid;place-items:center;font-weight:750;font-size:13px}
+.pill.v5{background:var(--c5);color:#fff}.pill.v4{background:var(--p4);color:var(--t4)}.pill.v3{background:var(--c3);color:var(--ink)}
+.exc .chg{font-size:12px;color:var(--warn-fg);background:var(--warn-bg);border-radius:99px;padding:0 8px}
+.exc .same{font-size:12px;color:var(--ink2)}
+.menu{position:relative;width:260px;background:var(--surface);border:1px solid var(--line2);border-radius:var(--r2);box-shadow:var(--pop);padding:6px}
+.menu .mi{display:block;width:100%;text-align:left;border:0;background:none;padding:8px 10px;border-radius:var(--r1);color:var(--ink)}
+.menu .mi b{display:block}.menu .mi small{color:var(--ink2)}
+.menu .mi:hover{background:var(--sunken)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+.note-box{margin-top:14px;padding:12px 14px;border-radius:var(--r2);background:var(--warn-bg);color:var(--warn-fg)}
+.note-box b{color:inherit}
+.dec{margin-top:28px;padding:16px 20px;border-radius:var(--r3);background:var(--surface);border:1px solid var(--line)}
+.dec ol{margin:6px 0 0;padding-left:20px}.dec li{margin:4px 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <h1>評分流程改版稿</h1>
+    <p class="muted">第 1 輪　2026-11-28（台北）　所有姓名、分數與評語皆為假資料。</p>
+    <p><b>目的</b>：老師快速評出六向度等第，系統同畫面給評語建議，老師看過按「接受並下一位」。評語不是老師要構思的東西。</p>
+    <p><b>三個方案共同改動</b>：評完第六個分數，評語建議立刻出現在分數旁；整個畫面只有一個主按鈕「接受並下一位」；換學生時第一個評分格自動就位；「個別觀察」預設收起；評語卡主線只留三個動作，其餘收進「更多」。</p>
+    <p><b>方案差異</b>放在結構與互動：1A 保留名單、評分與評語並排；1B 一次只放一張大卡、為觸控放大；1C 先選整體分數，只改不一樣的向度。</p>
+    <p><b>不捲動原則（本輪新增）</b>：桌機、平板、手機都在一屏內放完，頁面不捲動。評分、評語建議、「接受並下一位」永遠同時看得到。預算以筆電瀏覽器可視高度約 650px、一般手機約 664px 計；名單（桌機）自己有內部捲動，會自動帶到目前這位。</p>
+    <ul class="map">
+      <li><a href="#1a">1A 評分＋評語並排</a></li>
+      <li><a href="#1b">1B 單張大卡（觸控優先）</a></li>
+      <li><a href="#1c">1C 整體＋例外</a></li>
+      <li><a href="#more">「更多」展開內容</a></li>
+      <li><a href="#decide">請你決定</a></li>
+    </ul>
+  </header>
+
+  <section class="plan" id="1a">
+    <header><h2><span class="tag">1A</span> 評分＋評語並排</h2><span class="muted">最接近現況，改動最小</span></header>
+    <p class="sum">名單留在左側當進度與跳轉；中間左邊是六向度評分，右邊是評語建議與「接受並下一位」。評分鍵加高到 44px。手機的六向度與評語同一屏放完，底部固定「接受並下一位」，標題列的 ‹ › 切換上一位與下一位。</p>
+    <div class="facts">
+      <div><b>點擊次數（滑鼠）</b>6 次評分＋1 次接受＝7 次；現況還要多 1 次「點評分格」與 1 次「下一位」。</div>
+      <div><b>適合</b>桌機、筆電；老師習慣現在的畫面，學習成本最低。</div>
+      <div><b>取捨</b>桌機評分鍵仍受單頁免捲動限制，只能加到 44px，不及 1B。</div>
+    </div>
+    <div class="devs">
+      <div class="devcol"><p class="cap">桌機 1280×650</p><div class="devwrap" data-w="1280" data-h="650"><div class="dev" id="a-desk"></div></div></div>
+      <div class="devcol"><p class="cap">手機 390（1A、1B 共用）</p><div class="devwrap" data-w="390" data-h="664"><div class="dev" id="a-phone"></div></div></div>
+    </div>
+  </section>
+
+  <section class="plan" id="1b">
+    <header><h2><span class="tag">1B</span> 單張大卡（觸控優先）</h2><span class="muted">名單縮成上方一排圓點</span></header>
+    <p class="sum">一次只放一位學生。頂端橫排座號圓點代替左側名單，顏色表示狀態，點了就跳。六向度各占整列寬，評分鍵 56px 並附等第文字，手指不易點錯。評語在卡片下方，底部固定「上一位」與「接受並下一位」。手機放不下圓點列，沿用 1A 的手機版。</p>
+    <div class="facts">
+      <div><b>點擊次數</b>與 1A 相同，7 次；但每次點擊目標更大、更不易誤觸。</div>
+      <div><b>適合</b>iPad 與手機；桌機也能用，但左右空間會空。</div>
+      <div><b>取捨</b>看不到全班名單與姓名清單，要找特定學生得點圓點或用搜尋。</div>
+    </div>
+    <div class="devs">
+      <div class="devcol"><p class="cap">平板 820</p><div class="devwrap" data-w="820" data-h="960"><div class="dev" id="b-tab"></div></div></div>
+      
+    </div>
+  </section>
+
+  <section class="plan" id="1c">
+    <header><h2><span class="tag">1C</span> 整體＋例外</h2><span class="muted">減少點擊，但改變「評分」的意義</span></header>
+    <p class="sum">先點一個「整體表現」（5～1），六向度自動套用；老師只改和整體不一樣的向度，被改過的標示「已調整」。多數學生各向度接近，所以常常 2～3 次點擊就能完成。</p>
+    <div class="facts">
+      <div><b>點擊次數</b>整體 1 次＋例外 0～3 次＋接受 1 次＝2～5 次；現況永遠 7 次以上。</div>
+      <div><b>適合</b>班上多數學生表現整齊、只有少數向度不同。</div>
+      <div><b>風險</b>老師可能懶得細看就整體套用。要避免，需要你決定「套用的預設算不算已評」，見最下方。</div>
+    </div>
+    <div class="devs">
+      <div class="devcol"><p class="cap">桌機 1280×650</p><div class="devwrap" data-w="1280" data-h="650"><div class="dev" id="c-desk"></div></div></div>
+      <div class="devcol"><p class="cap">手機 390</p><div class="devwrap" data-w="390" data-h="664"><div class="dev" id="c-phone"></div></div></div>
+    </div>
+  </section>
+
+  <section class="plan" id="more">
+    <header><h2>評語卡「更多」展開內容</h2><span class="muted">三個方案共用；功能都保留，只是不佔主線</span></header>
+    <div class="devs">
+      <div class="menu" id="menu" role="menu"></div>
+      <p class="muted" style="max-width:52ch;margin:0">「補充觀察」也放這裡；輸入後評語會依觀察重新生成。每項附一行說明，分組沿用現有「更多工具」的寫法。</p>
+    </div>
+  </section>
+
+  <section class="dec" id="decide">
+    <h2>請你決定</h2>
+    <ol>
+      <li><b>方案</b>：選 1A、1B、1C，或混搭（例如桌機 1A、手機與平板 1B）。</li>
+      <li><b>1C 的預設</b>：若採整體＋例外，套用的整體分數要不要在按「接受」前，都算「評分中」、不計入完成進度？</li>
+      <li><b>桌機評分鍵</b>：1A 加高到 44px 是否可接受？若要更大，要放棄「桌機單頁免捲動」（規範〈4〉特別註明不得破壞）。</li>
+    <li><b>手機評分鍵 44px</b>：為了一屏放完，手機評分鍵由規範的 48px 縮為 44px（仍符合最小點擊目標），並省略五級文字色階列（數字與顏色固定 5→1）。可接受嗎？</li>
+      <li><b>補充觀察入口</b>：桌機與平板放在標題列「＋ 補充觀察」，手機收進「⋯」。可接受嗎？</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function(){
+  var DIMS=['日常生活表現','整潔習慣','禮節','班級服務','待人誠信','自律自重'];
+  var LV={5:'表現優良',4:'表現良好',3:'表現尚可',2:'需再加油',1:'亟待改進'};
+  var COMMENT='本學期能主動維護班級整潔，待人真誠有禮，常協助同學完成工作。期許在自律上持續精進，讓良好習慣更穩定。';
+  var ROSTER=[[15,'陳大文','done','已評'],[16,'王小美','done','已評'],[17,'張小明','done','已評'],[18,'林小安','doing','評分中'],[19,'李小華','new','尚未評'],[20,'黃小玉','new','尚未評'],[21,'周小凱','new','尚未評'],[22,'吳小芸','new','尚未評'],[23,'趙小宇','new','尚未評'],[24,'鄭小柔','new','尚未評']];
+  var S=[5,4,4,5,5,4];
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function keys(i,cur,h){var o='';for(var v=5;v>=1;v--)o+='<button type="button" class="k v'+v+'" data-dim="'+i+'" data-v="'+v+'" aria-pressed="'+(cur===v)+'" aria-label="'+DIMS[i]+' '+LV[v]+'" style="--kh:'+h+'px">'+v+'</button>';return '<div class="lv" role="group" aria-label="'+DIMS[i]+'">'+o+'</div>'}
+  function top(){return '<div class="top"><div class="brand"><span class="mark">評</span>智慧評語小幫手</div><div class="tabs"><span class="tab on">班級工作台</span><span class="tab">歷史評語與風格</span><span class="tab">設定與備份</span></div><span class="saved"><i></i>已自動儲存在本機</span></div>'}
+  function ctx(done){return '<div class="ctx"><span class="sel">113-1　七年三班 ▾</span><div class="prog"><b class="num">評分 '+done+' / 46</b><div class="bar"><i style="width:'+(done/46*100)+'%"></i></div></div><button class="btn sm">更多工具 ▾</button><button class="btn sm">下載 ▾</button></div>'}
+  function roster(){var r='<aside class="roster"><h3>名單　<span class="muted" style="font-weight:400">46 位</span></h3>';ROSTER.forEach(function(s){r+='<div class="rrow'+(s[0]===18?' sel2':'')+'"><span class="no num">'+s[0]+'</span><span>'+s[1]+'</span><span class="chip '+s[2]+'">'+s[3]+'</span></div>'});return r+'</aside>'}
+  function dh(){return '<div class="dh"><span class="muted num" style="font-size:18px">18</span><h2>林小安</h2><span class="chip doing">評分中</span><span class="star num">★ 4.5</span><span class="sp"><span class="muted num">18 / 46</span><button class="btn ghost sm">＋ 補充觀察</button><button class="btn sm">修改基本資料</button></span></div>'}
+  function draft(){return '<div class="draft">'+COMMENT+'</div><div class="gauge"><span class="num"><b>'+[...COMMENT].length+'</b> / 50 字</span><div class="g"><b></b><u></u></div><span class="chip ok">合格</span></div>'}
+  function more(){return '<button class="btn" style="min-width:44px" aria-label="更多">⋯</button>'}
+  function score(i,h){return '<div class="rate" style="grid-template-columns:96px 1fr 120px"><span class="lab">'+DIMS[i]+'</span>'+keys(i,S[i],h)+'<span class="lvt" data-lvt="'+i+'">'+LV[S[i]]+'</span></div>'}
+  function legend(cols){return '<div class="legend" style="grid-template-columns:'+cols+'"><span></span><div class="lv" style="gap:6px">'+[5,4,3,2,1].map(function(v){return '<span>'+LV[v].replace('表現','')+'</span>'}).join('')+'</div><span></span></div>'}
+
+  /* 1A 桌機 */
+  var a='';for(var i=0;i<6;i++)a+=score(i,44);
+  document.getElementById('a-desk').innerHTML=top()+ctx(18)+'<div class="work">'+roster()+'<div class="main">'+dh()+'<div style="display:grid;grid-template-columns:1.15fr 1fr;gap:14px;min-height:0;flex:1"><section class="card"><h3>六向度評分<small>點一個分數；第一個向度已自動就位</small></h3>'+legend('96px 1fr 120px')+'<div style="display:grid;gap:10px;margin-top:6px">'+a+'</div></section><section class="card" style="display:flex;flex-direction:column"><h3>評語建議<small>評完自動生成</small></h3>'+draft()+'<div class="acts" style="margin-top:auto"><button class="btn pri lg grow">接受並下一位 →</button></div><div class="acts" style="margin-top:8px"><button class="btn grow">重新生成</button><button class="btn grow">其他寫法</button>'+more()+'</div></section></div></div></div>';
+
+  /* 手機共用元件 */
+var SH=['日常生活','整潔習慣','禮節','班級服務','待人誠信','自律自重'];
+function prow(i){return '<div class="prow"><span class="lab">'+SH[i]+'</span>'+keys(i,S[i],44)+'</div>'}
+function pbar(){return '<div class="pbar"><button class="btn ghost sm" style="min-height:44px">← 名單</button><b>18 林小安</b><span class="star num">★ 4.5</span><span style="margin-left:auto;display:flex;align-items:center"><button class="btn ghost" style="min-width:44px;min-height:44px" aria-label="上一位">‹</button><span class="muted num">18/46</span><button class="btn ghost" style="min-width:44px;min-height:44px" aria-label="下一位">›</button></span></div>'}
+function tabbar(){return '<div class="tabbar"><span class="on">工作台</span><span>歷史與風格</span><span>設定與備份</span></div>'}
+function pdraft(){return '<div class="draft" style="margin-bottom:8px">'+COMMENT+'</div>'}
+function pacts(){return '<div class="acts" style="flex-wrap:nowrap;align-items:center"><span class="chip ok num" style="padding:2px 8px">'+[...COMMENT].length+'/50 合格</span><button class="btn grow" style="min-height:44px;padding:0 8px">重新生成</button><button class="btn grow" style="min-height:44px;padding:0 8px">其他寫法</button><button class="btn" style="min-height:44px;min-width:44px;padding:0" aria-label="更多">⋯</button></div>'}
+function pfoot(){return '<div class="pact" style="padding:6px 12px"><button class="btn" style="min-height:52px">上一位</button><button class="btn pri lg grow" style="min-height:52px">接受並下一位 →</button></div>'}
+var prs='';for(var q=0;q<6;q++)prs+=prow(q);
+document.getElementById('a-phone').innerHTML=pbar()+'<div class="pscroll"><section class="card pc"><div class="prows">'+prs+'</div></section><section class="card pc">'+pdraft()+pacts()+'</section></div>'+pfoot()+tabbar();
+
+/* 1B 平板 */
+function strip(){return '<div class="strip">'+[14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30].map(function(n){var st=n<18?'done':n===18?'doing':'new';return '<span class="dot '+st+(n===18?' cur':'')+' num">'+n+'</span>'}).join('')+'</div>'}
+function trow(i){return '<div class="rate" style="grid-template-columns:120px 1fr 90px"><span class="lab">'+DIMS[i]+'</span>'+keys(i,S[i],52)+'<span class="lvt" data-lvt="'+i+'">'+LV[S[i]]+'</span></div>'}
+var trs='';for(var j=0;j<6;j++)trs+=trow(j);
+document.getElementById('b-tab').innerHTML=top()+'<div style="padding:10px 24px 0;flex:none">'+strip()+'</div><div style="flex:1;min-height:0;overflow:hidden;padding:6px 24px 8px;display:flex;flex-direction:column;gap:10px;align-items:center"><div style="width:100%;max-width:700px">'+dh()+'</div><section class="card" style="width:100%;max-width:700px"><div style="display:grid;gap:8px">'+trs+'</div></section><section class="card" style="width:100%;max-width:700px"><h3>評語建議</h3>'+draft()+'<div class="acts"><button class="btn grow" style="min-height:44px">重新生成</button><button class="btn grow" style="min-height:44px">其他寫法</button><button class="btn" style="min-height:44px;min-width:44px" aria-label="更多">⋯</button></div></section></div><div class="pact" style="justify-content:center"><div style="width:100%;max-width:700px;display:flex;gap:8px"><button class="btn" style="min-height:56px">上一位</button><button class="btn pri lg grow" style="min-height:56px">接受並下一位 →</button></div></div>';
+
+/* 1C */
+  var BASE=4,EXC=[5,4,4,5,5,4];EXC=[4,4,4,5,4,3];
+  function basePick(){return '<div class="base">'+[5,4,3,2,1].map(function(v){return '<button type="button" class="bk v'+v+'" aria-pressed="'+(v===BASE)+'"><span>'+v+'</span><small>'+LV[v].replace('表現','')+'</small></button>'}).join('')+'</div>'}
+  function excRow(i,h){h=h||36;var v=EXC[i],ch=v!==BASE;return '<div class="exc"><span class="lab" style="font-weight:650">'+DIMS[i]+'</span>'+(ch?'<span class="chg">已調整</span>':'<span class="same">跟整體一樣</span>')+'<span style="display:flex;gap:6px;align-items:center"><span class="pill v'+v+' num">'+v+'</span><button class="btn sm" style="min-height:'+h+'px">改</button></span></div>'}
+  var ex='';for(var m=0;m<6;m++)ex+=excRow(m);
+  document.getElementById('c-desk').innerHTML=top()+ctx(18)+'<div class="work">'+roster()+'<div class="main">'+dh()+'<div style="display:grid;grid-template-columns:1.15fr 1fr;gap:14px;min-height:0;flex:1"><section class="card"><h3>① 整體表現<small>先點一個，六向度會自動套用</small></h3>'+basePick()+'<h3 style="margin-top:14px">② 只改不一樣的向度<small>2 項已調整</small></h3><div>'+ex+'</div></section><section class="card" style="display:flex;flex-direction:column"><h3>評語建議<small>評完自動生成</small></h3>'+draft()+'<div class="acts" style="margin-top:auto"><button class="btn pri lg grow">接受並下一位 →</button></div><div class="acts" style="margin-top:8px"><button class="btn grow">重新生成</button><button class="btn grow">其他寫法</button>'+more()+'</div></section></div></div></div>';
+  document.getElementById('c-phone').innerHTML=pbar()+'<div class="pscroll"><section class="card pc"><h3 style="margin-bottom:6px">整體表現</h3>'+basePick()+'</section><section class="card pc"><div style="display:flex;align-items:center;gap:8px"><h3 style="margin:0">與整體不同的向度<small>2 項</small></h3><button class="btn ghost sm" style="margin-left:auto;min-height:36px">其他 4 項 ▾</button></div>'+excRow(3,44)+excRow(5,44)+'</section><section class="card pc">'+pdraft()+pacts()+'</section></div>'+pfoot()+tabbar();
+
+/* 更多選單 */
+  document.getElementById('menu').innerHTML=[['補充觀察','輸入特別事蹟，評語會重新生成'],['複製評語','複製到剪貼簿，貼到別處'],['版本紀錄','查看並復原之前的評語'],['AI 協助','產生交接檔，交給授權的 AI'],['比對歷史','與該生過往評語比對重複'],['保護評語','選用；保護後須先解除才能修改']].map(function(r){return '<button class="mi" role="menuitem"><b>'+r[0]+'</b><small>'+r[1]+'</small></button>'}).join('<hr>');
+
+  /* 評分鍵可點（展示用） */
+  document.addEventListener('click',function(e){var b=e.target.closest('button.k');if(!b)return;var g=b.parentElement;g.querySelectorAll('button.k').forEach(function(x){x.setAttribute('aria-pressed',String(x===b))});var t=b.closest('.dev').querySelectorAll('[data-lvt="'+b.dataset.dim+'"]');t.forEach(function(x){x.textContent=LV[b.dataset.v]})});
+
+  /* 縮放 */
+  function fit(){document.querySelectorAll('.devwrap').forEach(function(w){var W=+w.dataset.w,H=+w.dataset.h,d=w.firstElementChild,avail=w.parentElement.parentElement.clientWidth;var sc=Math.min(1,avail/W);d.style.width=W+'px';d.style.height=H+'px';d.style.transform='scale('+sc+')';w.style.width=(W*sc)+'px';w.style.height=(H*sc)+'px'})}
+  fit();addEventListener('resize',fit);if(window.ResizeObserver)new ResizeObserver(fit).observe(document.body);
+})();
+</script>
+</html>
