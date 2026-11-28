@@ -1,5 +1,5 @@
 import {dims,complete,length,similarity,validate ,validSemanticRule} from './engine.mjs';
-export const VERSION='1.12.0';
+export const VERSION='1.13.0';
 export const seatCompare=(a,b)=>{const x=Number(a.seat),y=Number(b.seat);return Number.isNaN(x)||Number.isNaN(y)?String(a.seat).localeCompare(String(b.seat),'zh-Hant',{numeric:true}):x-y;};
 export const identity=v=>String(v??'').normalize('NFKC').replace(/\s+/g,'');
 export const sameStudent=(a,b)=>Boolean(identity(a.studentId)&&identity(a.studentId).toUpperCase()===identity(b.studentId).toUpperCase());
